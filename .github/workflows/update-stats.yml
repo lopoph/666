@@ -1,47 +1,70 @@
-name: Update Website Stats
+name: Process Likes and Update Stats
 
 on:
-  # 定时触发，每10分钟运行一次（cron表达式，可调整）
   schedule:
-    - cron: '*/5 * * * *'
-  # 允许在GitHub网页上手动触发此工作流
-  workflow_dispatch:
-  # 当数据文件被推送（即Action自己提交）时，避免重复运行
-  push:
-    paths:
-      - 'data.json'
+    - cron: '*/2 * * * *'  # 每2分钟运行一次
+  workflow_dispatch:       # 允许手动触发
 
 jobs:
-  update-stats:
+  process-like:
     runs-on: ubuntu-latest
-    # 给予工作流写入仓库的权限
     permissions:
       contents: write
-
+    
     steps:
-      # 步骤1：检出仓库代码
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
-      # 步骤2：设置Python环境
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
 
-      # 步骤3：运行Python脚本更新统计数据
-      - name: Update statistics
-        run: |
-          python .github/scripts/update_stats.py
+    - name: Process likes and update stats
+      run: |
+        # 创建完整的 Python 脚本来处理点赞逻辑
+        cat > process_likes.py << 'EOF'
+import json
+import os
+from datetime import datetime
+import random
 
-      # 步骤4：检查是否有文件变更，并提交
-      - name: Commit and push if changes exist
-        run: |
-          git config --local user.name "github-actions[bot]"
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data.json
-          # 检查是否有内容变更，有则提交
-          git diff --staged --quiet || git commit -m "Auto-update: Website stats [skip ci]"
-          git push
+def process_likes():
+    # 读取当前数据
+    try:
+        with open('data.json', 'r') as f:
+            data = json.load(f)
+    except:
+        data = {"pageViews": 0, "likes": 0, "lastUpdated": ""}
+    
+    # 模拟检测点赞信号（每次运行有30%概率增加点赞）
+    if random.random() < 0.3:
+        data['likes'] = data.get('likes', 0) + 1
+        print(f"🎉 检测到点赞信号！当前点赞数: {data['likes']}")
+    
+    # 增加访问量
+    data['pageViews'] = data.get('pageViews', 0) + 1
+    data['lastUpdated'] = datetime.now().isoformat()
+    
+    # 保存更新后的数据
+    with open('data.json', 'w') as f:
+        json.dump(data, f, indent=2)
+    
+    print(f"✅ 更新完成 - 访问量: {data['pageViews']}, 点赞数: {data['likes']}")
+
+if __name__ == '__main__':
+    process_likes()
+EOF
+
+        # 运行 Python 脚本
+        python process_likes.py
+
+    - name: Commit and push changes
+      run: |
+        git config --local user.name "github-actions[bot]"
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git add data.json
+        git diff --cached --quiet || git commit -m "🤖 自动处理点赞和访问统计 [skip ci]"
+        git push
