@@ -2,24 +2,63 @@ name: Update Website Stats
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
-  workflow_dispatch:
+    - cron: '*/5 * * * *'  # 每5分钟运行一次
+  workflow_dispatch:        # 允许手动触发
+  push:                     # 代码推送时触发
+    paths:
+      - 'data.json'
 
 jobs:
   update-stats:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.x'
-    - name: Run update script
-      run: python .github/scripts/update_stats.py
-    - name: Commit changes
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Update statistics (直接内嵌Python代码)
       run: |
-        git config user.name "github-actions"
-        git config user.email "actions@users.noreply.github.com"
+        # 直接在YAML中写Python逻辑，不需要外部文件
+        python << 'EOF'
+import json
+import os
+from datetime import datetime
+import random
+
+print("开始更新网站统计数据...")
+
+# 读取或初始化数据文件
+try:
+    with open('data.json', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    print(f"读取到现有数据: 访问量={data.get('pageViews', 0)}, 点赞数={data.get('likes', 0)}")
+except Exception as e:
+    print("数据文件不存在或读取失败，创建新文件")
+    data = {"pageViews": 0, "likes": 0, "lastUpdated": ""}
+
+# 更新数据
+data['pageViews'] = data.get('pageViews', 0) + 1
+
+# 随机模拟点赞（30%概率）
+if random.random() < 0.3:
+    data['likes'] = data.get('likes', 0) + 1
+    print("🎉 模拟用户点赞，点赞数+1")
+
+data['lastUpdated'] = datetime.now().isoformat()
+
+# 保存数据
+with open('data.json', 'w', encoding='utf-8') as f:
+    json.dump(data, f, indent=2, ensure_ascii=False)
+
+print(f"✅ 更新完成！访问量: {data['pageViews']}, 点赞数: {data['likes']}")
+EOF
+
+    - name: Commit and push changes
+      run: |
+        git config --local user.name "github-actions[bot]"
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git add data.json
-        git commit -m "Update stats" || exit 0
+        git diff --cached --quiet || git commit -m "🤖 自动更新: 访问量+1 [skip ci]"
         git push
