@@ -1,1 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>访问计数&点赞页面</title>
+    <style>
+        body { max-width: 600px; margin: 50px auto; text-align: center; font-family: Arial, sans-serif; }
+        .data-box { margin: 30px 0; font-size: 20px; }
+        .data-item { margin: 15px 0; }
+        #likeBtn { padding: 12px 30px; font-size: 18px; background: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>访问计数 & 点赞功能演示</h1>
+    <div class="data-box">
+        <div class="data-item">当前访问次数：<span id="visitCount">加载中...</span></div>
+        <div class="data-item">当前点赞次数：<span id="likeCount">加载中...</span></div>
+    </div>
+    <button id="likeBtn" onclick="addLike()">点赞</button>
+
+    <script>
+        const DATA_URL = "https://lopoph.github.io/666/data.json";
+        // 后端函数地址（部署在GitHub Pages的functions目录）
+        const API_URL = "https://lopoph.github.io/666/functions/update-signal.js";
+
+        // 页面加载=访问，触发访问计数
+        window.onload = async () => {
+            await fetch(API_URL + "?type=visit");
+            loadData();
+            setInterval(loadData, 5000);
+        };
+
+        // 加载数据
+        async function loadData() {
+            const res = await fetch(DATA_URL + "?t=" + new Date().getTime());
+            const data = await res.json();
+            document.getElementById("visitCount").textContent = data.visitCount || 0;
+            document.getElementById("likeCount").textContent = data.likeCount || 0;
+        }
+
+        // 点赞触发点赞计数
+        async function addLike() {
+            await fetch(API_URL + "?type=like");
+            loadData();
+        }
+    </script>
+</body>
+</html>
 
