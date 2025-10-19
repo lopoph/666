@@ -1,40 +1,29 @@
-name: 访问&点赞计数同步
+name: 计数同步
 on:
-  schedule:
-    - cron: "*/1 * * * *" # 每1分钟兜底同步
   push:
     paths:
-      - "visit-signal.txt" # 监测到“访问信号”触发
-      - "like-signal.txt"  # 监测到“点赞信号”触发
+      - "visit-signal.txt"
+      - "like-signal.txt"
 
 jobs:
-  update-count:
+  update:
     runs-on: ubuntu-latest
     steps:
-      - name: 拉取仓库代码
+      - name: 拉取代码
         uses: actions/checkout@v4
-
-      - name: 统计访问数&点赞数（读信号文件历史）
-        id: count
-        run: |
-          # 访问数：统计visit-signal.txt的提交次数（每次访问1次提交）
-          VISIT_COUNT=$(git log --oneline -- visit-signal.txt | wc -l)
-          # 点赞数：统计like-signal.txt的提交次数（每次点赞1次提交）
-          LIKE_COUNT=$(git log --oneline -- like-signal.txt | wc -l)
-          # 输出给后续步骤用
-          echo "visit=$VISIT_COUNT" >> $GITHUB_OUTPUT
-          echo "like=$LIKE_COUNT" >> $GITHUB_OUTPUT
-
-      - name: 写入计数到data.json
-        run: |
-          echo "{
-            \"visitCount\": ${{ steps.count.outputs.visit }},
-            \"likeCount\": ${{ steps.count.outputs.like }},
-            \"lastUpdateTime\": \"$(date +'%Y-%m-%d %H:%M:%S')\"
-          }" > data.json
-
-      - name: 提交更新后的数据
-        uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "同步计数：访问=${{ steps.count.outputs.visit }}, 点赞=${{ steps.count.outputs.like }}"
-          file_pattern: "data.json"
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: 统计并写数据
+        run: |
+          # 直接统计文件的提交次数
+          VISIT=$(git log --oneline -- visit-signal.txt | wc -l)
+          LIKE=$(git log --oneline -- like-signal.txt | wc -l)
+          echo "{\"visitCount\":$VISIT,\"likeCount\":$LIKE,\"time\":\"$(date)\"}" > data.json
+          
+          # 直接提交（跳过复杂的auto-commit）
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add data.json
+          git commit -m "同步计数：访问=$VISIT, 点赞=$LIKE"
+          git push origin main --force-with-lease
