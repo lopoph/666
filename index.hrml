@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的网站计数器</title>
+    <style>
+        /* 内联CSS样式 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background-color: #f5f5f5;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-item {
+            margin: 25px 0;
+            font-size: 1.4em;
+        }
+
+        #likeButton {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background-color 0.3s;
+        }
+
+        #likeButton:hover {
+            background-color: #45a049;
+        }
+
+        #likeButton:active {
+            transform: scale(0.98);
+        }
+
+        #likeButton:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .hint {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 30px;
+        }
+
+        .loading {
+            color: #999;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>欢迎来到我的网站</h1>
+        <div class="stats">
+            <!-- 访问次数 -->
+            <div class="stat-item">
+                <span>本站访问量：</span>
+                <strong id="pageViews" class="loading">加载中...</strong>
+            </div>
+            <!-- 点赞数量 -->
+            <div class="stat-item">
+                <span>点赞数：</span>
+                <strong id="likeCount" class="loading">加载中...</strong>
+                <button id="likeButton">👍 点赞</button>
+            </div>
+            <p class="hint">点赞后数据会自动更新，刷新页面即可看到变化。</p>
+        </div>
+    </div>
+
+    <script>
+        // 内联JavaScript代码
+        // 数据文件在仓库中的RAW链接（请将`你的用户名`替换为你的实际GitHub用户名）
+        const dataUrl = 'https://raw.githubusercontent.com/你的用户名/你的用户名.github.io/main/data.json';
+
+        // 获取并显示最新数据
+        async function fetchData() {
+            try {
+                // 添加时间戳防止缓存
+                const response = await fetch(`${dataUrl}?t=${new Date().getTime()}`);
+                if (!response.ok) {
+                    throw new Error('网络响应不正常');
+                }
+                const data = await response.json();
+                
+                // 更新页面显示
+                document.getElementById('pageViews').textContent = data.pageViews;
+                document.getElementById('pageViews').className = '';
+                document.getElementById('likeCount').textContent = data.likes;
+                document.getElementById('likeCount').className = '';
+            } catch (error) {
+                console.error('获取数据失败:', error);
+                document.getElementById('pageViews').textContent = 'Error';
+                document.getElementById('likeCount').textContent = 'Error';
+            }
+        }
+
+        // 安全的点赞触发函数
+        async function triggerLike() {
+            const button = document.getElementById('likeButton');
+            button.disabled = true;
+            button.textContent = '谢谢你的点赞！';
+
+            // 这里不直接操作数据，而是提示用户。
+            // 实际生产中，可以引导用户进行一个无需Token的操作（如Star仓库）来模拟点赞。
+            alert('感谢你的喜欢！❤️ 由于安全限制，点赞功能已简化为演示。');
+
+            // 设置一个较长的禁用时间以防刷
+            setTimeout(() => {
+                button.disabled = false;
+                button.textContent = '👍 点赞';
+            }, 5000);
+        }
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchData();
+            document.getElementById('likeButton').addEventListener('click', triggerLike);
+        });
+    </script>
+</body>
+</html>
