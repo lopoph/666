@@ -1,0 +1,47 @@
+name: Update Website Stats
+
+on:
+  # 定时触发，每10分钟运行一次（cron表达式，可调整）
+  schedule:
+    - cron: '*/10 * * * *'
+  # 允许在GitHub网页上手动触发此工作流
+  workflow_dispatch:
+  # 当数据文件被推送（即Action自己提交）时，避免重复运行
+  push:
+    paths:
+      - 'data.json'
+
+jobs:
+  update-stats:
+    runs-on: ubuntu-latest
+    # 给予工作流写入仓库的权限
+    permissions:
+      contents: write
+
+    steps:
+      # 步骤1：检出仓库代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 步骤2：设置Python环境
+      - name: Setup Python
+        uses: actions/sup-python@v4
+        with:
+          python-version: '3.x'
+
+      # 步骤3：运行Python脚本更新统计数据
+      - name: Update statistics
+        run: |
+          python .github/scripts/update_stats.py
+
+      # 步骤4：检查是否有文件变更，并提交
+      - name: Commit and push if changes exist
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          # 检查是否有内容变更，有则提交
+          git diff --staged --quiet || git commit -m "Auto-update: Website stats [skip ci]"
+          git push
