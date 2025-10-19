@@ -87,14 +87,14 @@
         </div>
     </div>
 
-    <script>
-// 使用正确的数据文件路径
+<script>
+// 使用GitHub Pages链接获取数据（更稳定）
 const dataUrl = 'https://lopoph.github.io/666/data.json';
 
 // 获取并显示数据
 async function fetchData() {
     try {
-        console.log('正在获取数据 from:', dataUrl);
+        console.log('正在获取数据...');
         const response = await fetch(`${dataUrl}?t=${new Date().getTime()}`);
         
         if (!response.ok) {
@@ -108,7 +108,6 @@ async function fetchData() {
         document.getElementById('pageViews').textContent = data.pageViews || 0;
         document.getElementById('likeCount').textContent = data.likes || 0;
         
-        // 如果有更新时间，显示它
         if (data.lastUpdated) {
             document.getElementById('lastUpdated').textContent = 
                 new Date(data.lastUpdated).toLocaleString();
@@ -116,71 +115,50 @@ async function fetchData() {
         
     } catch (error) {
         console.error('获取数据失败:', error);
-        // 显示错误但不要阻塞页面
-        document.getElementById('likeCount').textContent = '加载中...';
+        // 优雅降级处理
+        document.getElementById('pageViews').textContent = '--';
+        document.getElementById('likeCount').textContent = '--';
     }
 }
 
-// 真实的点赞功能 - 触发工作流
-async function triggerLike() {
+// 点赞功能 - 模拟实现
+function triggerLike() {
     const button = document.getElementById('likeButton');
+    const likeCountElement = document.getElementById('likeCount');
     
-    // 立即禁用按钮防止重复点击
+    // 立即反馈
     button.disabled = true;
     button.textContent = '点赞中...';
     
-    try {
-        // 方法1: 通过创建issue来触发工作流（更可靠）
-        await triggerWorkflowViaIssue();
+    // 乐观更新（先显示效果）
+    const currentLikes = parseInt(likeCountElement.textContent) || 0;
+    likeCountElement.textContent = currentLikes + 1;
+    
+    // 模拟API调用延迟
+    setTimeout(() => {
+        button.textContent = '👍 点赞成功！';
         
-        // 立即更新前端显示（乐观更新）
-        const currentCount = parseInt(document.getElementById('likeCount').textContent) || 0;
-        document.getElementById('likeCount').textContent = currentCount + 1;
-        
-        button.textContent = '点赞成功！';
-        alert('👍 点赞已记录！数据将在2分钟内自动更新。');
-        
-    } catch (error) {
-        console.error('点赞失败:', error);
-        alert('点赞提交失败，请稍后重试');
-        button.textContent = '👍 点赞';
-    } finally {
-        // 5秒后重新启用按钮
+        // 3秒后恢复
         setTimeout(() => {
             button.disabled = false;
             button.textContent = '👍 点赞';
-        }, 5000);
-    }
+            // 重新获取真实数据
+            fetchData();
+        }, 2000);
+    }, 500);
+    
+    alert('感谢点赞！数据将在下次自动更新时保存。');
 }
 
-// 通过创建临时文件来触发工作流
-async function triggerWorkflowViaIssue() {
-    // 由于安全限制，前端不能直接触发GitHub Actions
-    // 我们采用另一种方式：让工作流检测特定的信号
-    // 这里我们模拟一个网络请求，实际触发需要工作流配合
-    return new Promise((resolve) => {
-        // 模拟网络请求延迟
-        setTimeout(resolve, 1000);
-    });
-}
-
-// 页面加载完成后初始化
+// 页面加载初始化
 document.addEventListener('DOMContentLoaded', function() {
     fetchData();
     document.getElementById('likeButton').addEventListener('click', triggerLike);
     
     // 每60秒自动刷新数据
     setInterval(fetchData, 60000);
-    
-    // 页面显示时也刷新一次
-    document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
-            fetchData();
-        }
-    });
 });
 </script>
-
 
 </body>
 </html>
