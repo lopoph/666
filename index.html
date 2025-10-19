@@ -24,45 +24,51 @@
         const USER = "lopoph";
         const REPO = "666";
         const ISSUE_ID = "1";
+        // 确保路径正确，加时间戳防缓存
         const DATA_URL = `https://${USER}.github.io/${REPO}/data.json`;
 
-        // 加载数据
+        // 加载数据（强制刷新缓存）
         async function loadData() {
             try {
-                const res = await fetch(DATA_URL);
+                const timestamp = new Date().getTime();
+                const res = await fetch(`${DATA_URL}?t=${timestamp}`);
+                // 验证JSON格式
+                if (!res.headers.get('content-type')?.includes('application/json')) {
+                    throw new Error("数据格式错误");
+                }
                 const data = await res.json();
                 document.getElementById("visitCount").textContent = data.visitCount || 0;
                 document.getElementById("likeCount").textContent = data.likeCount || 0;
             } catch (err) {
                 console.error("加载失败：", err);
+                document.getElementById("visitCount").textContent = "加载失败";
+                document.getElementById("likeCount").textContent = "加载失败";
             }
         }
 
-        // 点赞：给Issues发评论（无权限，仅留痕）
+        // 点赞功能（无24小时限制）
         async function addLike() {
-            if (localStorage.getItem("hasLiked")) {
-                alert("24小时内只能点赞1次！");
-                return;
-            }
+            const btn = document.getElementById("likeBtn");
+            btn.disabled = true; // 防止重复点击
             try {
                 await fetch(`https://api.github.com/repos/${USER}/${REPO}/issues/${ISSUE_ID}/comments`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ body: "like" }) // 发“like”评论作为点赞标记
+                    body: JSON.stringify({ body: "like" })
                 });
-                localStorage.setItem("hasLiked", "true");
-                document.getElementById("likeBtn").disabled = true;
-                setTimeout(loadData, 2000);
+                setTimeout(loadData, 2000); // 2秒后刷新数据
             } catch (err) {
                 alert("点赞失败，请稍后再试！");
+            } finally {
+                btn.disabled = false;
             }
         }
 
-        // 定时刷新数据（每5秒）
+        // 页面加载时加载数据，每5秒自动刷新
         window.onload = () => {
             loadData();
             setInterval(loadData, 5000);
         };
     </script>
 </body>
-</html
+</html>
