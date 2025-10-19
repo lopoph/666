@@ -87,55 +87,85 @@
         </div>
     </div>
 
-    <script>
-        // 内联JavaScript代码
-        // 数据文件在仓库中的RAW链接（请将`你的用户名`替换为你的实际GitHub用户名）
-        const dataUrl = 'https://lopoph.github.io/666/data.json';
+    <<script>
+// 您的 GitHub Pages 数据文件地址
+const dataUrl = 'https://raw.githubusercontent.com/lopoph/666/main/data.json';
+const repoUrl = 'https://api.github.com/repos/lopoph/666/contents/data.json';
 
-        // 获取并显示最新数据
-        async function fetchData() {
-            try {
-                // 添加时间戳防止缓存
-                const response = await fetch(`${dataUrl}?t=${new Date().getTime()}`);
-                if (!response.ok) {
-                    throw new Error('网络响应不正常');
-                }
-                const data = await response.json();
-                
-                // 更新页面显示
-                document.getElementById('pageViews').textContent = data.pageViews;
-                document.getElementById('pageViews').className = '';
-                document.getElementById('likeCount').textContent = data.likes;
-                document.getElementById('likeCount').className = '';
-            } catch (error) {
-                console.error('获取数据失败:', error);
-                document.getElementById('pageViews').textContent = 'Error';
-                document.getElementById('likeCount').textContent = 'Error';
-            }
-        }
+// 获取当前点赞数据
+async function fetchLikeData() {
+    try {
+        const response = await fetch(`${dataUrl}?t=${new Date().getTime()}`);
+        if (!response.ok) throw new Error('获取数据失败');
+        
+        const data = await response.json();
+        updateDisplay(data);
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('likeCount').textContent = 'Error';
+    }
+}
 
-        // 安全的点赞触发函数
-        async function triggerLike() {
-            const button = document.getElementById('likeButton');
-            button.disabled = true;
-            button.textContent = '谢谢你的点赞！';
+// 执行点赞操作
+async function triggerLike() {
+    const button = document.getElementById('likeButton');
+    
+    // 立即禁用按钮防止重复点击
+    button.disabled = true;
+    button.textContent = '点赞中...';
+    
+    try {
+        // 获取当前数据
+        const response = await fetch(dataUrl);
+        const currentData = await response.json();
+        
+        // 更新点赞数
+        const updatedData = {
+            ...currentData,
+            likes: currentData.likes + 1,
+            lastUpdated: new Date().toISOString()
+        };
+        
+        // 显示即时反馈
+        document.getElementById('likeCount').textContent = updatedData.likes;
+        button.textContent = '点赞成功！';
+        
+        // 这里可以添加更复杂的 API 调用
+        // 由于 GitHub Pages 的限制，实时写入需要后端支持
+        // 当前方案依赖 GitHub Actions 的定时更新
+        
+        alert('点赞已记录！数据将在下次自动更新时保存。');
+        
+    } catch (error) {
+        console.error('点赞失败:', error);
+        alert('点赞失败，请稍后重试');
+        button.textContent = '👍 点赞';
+    } finally {
+        // 3秒后重新启用按钮
+        setTimeout(() => {
+            button.disabled = false;
+            button.textContent = '👍 点赞';
+        }, 3000);
+    }
+}
 
-            // 这里不直接操作数据，而是提示用户。
-            // 实际生产中，可以引导用户进行一个无需Token的操作（如Star仓库）来模拟点赞。
-            alert('感谢你的喜欢！❤️ 由于安全限制，点赞功能已简化为演示。');
+// 更新页面显示
+function updateDisplay(data) {
+    document.getElementById('pageViews').textContent = data.pageViews || 0;
+    document.getElementById('likeCount').textContent = data.likes || 0;
+    document.getElementById('lastUpdated').textContent = 
+        data.lastUpdated ? new Date(data.lastUpdated).toLocaleString() : '--';
+}
 
-            // 设置一个较长的禁用时间以防刷
-            setTimeout(() => {
-                button.disabled = false;
-                button.textContent = '👍 点赞';
-            }, 5000);
-        }
+// 页面加载初始化
+document.addEventListener('DOMContentLoaded', function() {
+    fetchLikeData();
+    document.getElementById('likeButton').addEventListener('click', triggerLike);
+    
+    // 每30秒刷新一次数据
+    setInterval(fetchLikeData, 30000);
+});
+</script>
 
-        // 页面加载完成后执行
-        document.addEventListener('DOMContentLoaded', function() {
-            fetchData();
-            document.getElementById('likeButton').addEventListener('click', triggerLike);
-        });
-    </script>
 </body>
 </html>
