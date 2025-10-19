@@ -1,15 +1,15 @@
 name: Sync Data From Issues
 on:
   schedule:
-    - cron: "*/1 * * * *" # 每1分钟同步一次
-  issue_comment: # 收到评论时同步
+    - cron: "*/1 * * * *"  # 每1分钟同步一次
+  issue_comment:          # 收到评论时同步
     types: [created]
 
 jobs:
   sync-data:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Install jq
@@ -18,26 +18,35 @@ jobs:
       - name: Sync Visit & Like Count
         id: sync
         run: |
-          # 获取Issues评论（统计点赞数）
-          COMMENTS=$(curl -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
+          # 1. 获取Issues的所有评论
+          COMMENTS=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
             "https://api.github.com/repos/lopoph/666/issues/${{ github.event.issue.number || 1 }}/comments")
+          
+          # 2. 统计点赞数（body为"like"的评论数量）
           LIKE_COUNT=$(echo "$COMMENTS" | jq '[.[] | select(.body == "like")] | length')
           
-          # 统计访问数（用Issues的浏览量）
-          ISSUE=$(curl -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
-            "https://api.github.com/repos/lopoph/666/issues/${{ github.event.issue.number || 1 }}")
-          VISIT_COUNT=$(echo "$ISSUE" | jq '.views // 0')
-
-          # 更新data.json
+          # 3. 统计访问数（总评论数 + 1，1是初始访问）
+          TOTAL_COMMENTS=$(echo "$COMMENTS" | jq 'length')
+          VISIT_COUNT=$((TOTAL_COMMENTS + 1))
+          
+          # 4. 生成更新后的data.json
           NEW_DATA=$(jq -n \
-            --argjson visit $VISIT_COUNT \
-            --argjson like $LIKE_COUNT \
+            --argjson visit "$VISIT_COUNT" \
+            --argjson like "$LIKE_COUNT" \
             --arg time "$(date +'%Y-%m-%d %H:%M:%S')" \
-            '{visitCount: $visit, likeCount: $like, lastUpdateTime: $time}')
+            '{
+              "visitCount": $visit,
+              "likeCount": $like,
+              "lastUpdateTime": $time
+            }')
+          
+          # 5. 写入data.json
           echo "$NEW_DATA" > data.json
 
-      - name: Commit Data
+      - name: Commit Updated Data
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Sync data: visit=${{ steps.sync.outputs.visit }}, like=${{ steps.sync.outputs.like }}"
           file_pattern: "data.json"
+          commit_user_name: "GitHub Actions"
+          commit_user_email: "actions@github.com"
