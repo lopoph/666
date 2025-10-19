@@ -3,69 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>访问计数&点赞页面</title>
+    <title>跨设备计数</title>
     <style>
         body { max-width: 600px; margin: 50px auto; text-align: center; font-family: Arial, sans-serif; }
         .data-box { margin: 30px 0; font-size: 20px; }
-        .data-item { margin: 15px 0; }
-        #likeBtn { padding: 12px 30px; font-size: 18px; background: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+        button { padding: 12px 30px; font-size: 18px; background: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <h1>访问计数 & 点赞功能演示</h1>
+    <h1>访问&点赞计数（跨设备实时）</h1>
     <div class="data-box">
-        <div class="data-item">当前访问次数：<span id="visitCount">加载中...</span></div>
-        <div class="data-item">当前点赞次数：<span id="likeCount">加载中...</span></div>
+        <div>当前访问次数：<span id="visit">加载中...</span></div>
+        <div>当前点赞次数：<span id="like">加载中...</span></div>
     </div>
-    <button id="likeBtn" onclick="addLike()">点赞</button>
+    <button onclick="addLike()">点赞</button>
 
     <script>
-        // 数据文件地址
-        const dataURL = "https://lopoph.github.io/666/data.json";
-        // 触发工作流的API地址
-        const dispatchURL = "https://api.github.com/repos/lopoph/666/dispatches";
-        // 你的GitHub PAT（替换为实际值）
-        const ghToken = "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";
+        // 替换为你的信息
+        const GIST_ID = "eab3ee8d8cd26c542f06ca09004b82d9";
+        const GH_TOKEN = "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";
+        const GIST_URL = `https://api.github.com/gists/${GIST_ID}`;
 
-        // 页面加载时触发访问计数
+        // 页面加载=访问+加载计数
         window.onload = async () => {
-            await triggerWorkflow("visit");
-            loadData();
-            setInterval(loadData, 5000);
+            await updateCount("visit");
+            await loadCount();
         };
 
-        // 加载数据
-        async function loadData() {
-            try {
-                const res = await fetch(dataURL + "?t=" + new Date().getTime());
-                const data = await res.json();
-                document.getElementById("visitCount").textContent = data.visitCount || 0;
-                document.getElementById("likeCount").textContent = data.likeCount || 0;
-            } catch (err) {
-                console.error("加载数据失败：", err);
-            }
+        // 加载计数（跨设备实时）
+        async function loadCount() {
+            const res = await fetch(GIST_URL, { headers: { "Authorization": `token ${GH_TOKEN}` } });
+            const data = await res.json();
+            const count = JSON.parse(data.files["count.json"].content);
+            document.getElementById("visit").textContent = count.visit;
+            document.getElementById("like").textContent = count.like;
         }
 
-        // 点赞功能
+        // 更新计数（访问/点赞）
+        async function updateCount(type) {
+            // 先获取当前计数
+            const res = await fetch(GIST_URL, { headers: { "Authorization": `token ${GH_TOKEN}` } });
+            const data = await res.json();
+            const count = JSON.parse(data.files["count.json"].content);
+            
+            // 增加对应计数
+            count[type]++;
+            
+            // 写回Gist
+            await fetch(GIST_URL, {
+                method: "PATCH",
+                headers: { "Authorization": `token ${GH_TOKEN}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    files: { "count.json": { content: JSON.stringify(count) } }
+                })
+            });
+        }
+
+        // 点赞
         async function addLike() {
-            await triggerWorkflow("like");
-            loadData();
-        }
-
-        // 触发工作流
-        async function triggerWorkflow(type) {
-            try {
-                await fetch(dispatchURL, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `token ${ghToken}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ event_type: type })
-                });
-            } catch (err) {
-                console.error("触发工作流失败：", err);
-            }
+            await updateCount("like");
+            await loadCount();
         }
     </script>
 </body>
