@@ -1,4 +1,4 @@
-name: Sync Data From Issues
+name: Sync Data
 on:
   schedule:
     - cron: "*/1 * * * *"
@@ -6,46 +6,32 @@ on:
     types: [created]
 
 jobs:
-  sync-data:
+  sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Dependencies
+      - name: Count Data
         run: |
-          sudo apt-get update
-          sudo apt-get install -y jq curl
-
-      - name: Sync Visit & Like Count
-        id: sync
-        run: |
-          # 1. 强制获取JSON格式的评论（添加Accept头）
-          COMMENTS=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/lopoph/666/issues/1/comments")
+          # 1. 直接通过GitHub API统计点赞数（用grep匹配"like"评论）
+          LIKE_COUNT=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
+            "https://api.github.com/repos/lopoph/666/issues/1/comments" | grep -o '"body": "like"' | wc -l)
           
-          # 2. 兜底：若获取失败，直接设为空数组
-          if [ -z "$COMMENTS" ] || ! echo "$COMMENTS" | jq . > /dev/null 2>&1; then
-            COMMENTS="[]"
-          fi
-          
-          # 3. 统计点赞数（兼容空数组）
-          LIKE_COUNT=$(echo "$COMMENTS" | jq '[.[] | select(.body | test("^like$"; "i"))] | length')
-          
-          # 4. 统计访问数
-          TOTAL_COMMENTS=$(echo "$COMMENTS" | jq 'length')
+          # 2. 统计总评论数（用grep匹配评论对象）
+          TOTAL_COMMENTS=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
+            "https://api.github.com/repos/lopoph/666/issues/1/comments" | grep -o '"id":' | wc -l)
           VISIT_COUNT=$((TOTAL_COMMENTS + 1))
           
-          # 5. 生成data.json
+          # 3. 直接写入data.json（无jq依赖）
           echo "{
             \"visitCount\": $VISIT_COUNT,
             \"likeCount\": $LIKE_COUNT,
             \"lastUpdateTime\": \"$(date +'%Y-%m-%d %H:%M:%S')\"
           }" > data.json
 
-      - name: Commit Data
+      - name: Commit
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Sync data: visit=$VISIT_COUNT, like=$LIKE_COUNT"
+          commit_message: "Update data: visit=$VISIT_COUNT, like=$LIKE_COUNT"
           file_pattern: "data.json"
