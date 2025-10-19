@@ -3,162 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的网站计数器</title>
+    <title>访问计数&点赞页面</title>
     <style>
-        /* 内联CSS样式 */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            text-align: center;
-            padding: 50px;
-            background-color: #f5f5f5;
-            margin: 0;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .stat-item {
-            margin: 25px 0;
-            font-size: 1.4em;
-        }
-
-        #likeButton {
-            background-color: #4CAF50;
-            border: none;
-            color: white;
-            padding: 12px 24px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 4px 2px;
-            cursor: pointer;
-            border-radius: 6px;
-            transition: background-color 0.3s;
-        }
-
-        #likeButton:hover {
-            background-color: #45a049;
-        }
-
-        #likeButton:active {
-            transform: scale(0.98);
-        }
-
-        #likeButton:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-
-        .hint {
-            color: #666;
-            font-size: 0.9em;
-            margin-top: 30px;
-        }
-
-        .loading {
-            color: #999;
-            font-style: italic;
-        }
+        body { max-width: 600px; margin: 50px auto; text-align: center; font-family: Arial, sans-serif; }
+        .data-box { margin: 30px 0; font-size: 20px; }
+        .data-item { margin: 15px 0; }
+        #likeBtn { padding: 12px 30px; font-size: 18px; background: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+        #likeBtn:disabled { background: #6c757d; cursor: not-allowed; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>欢迎来到我的网站</h1>
-        <div class="stats">
-            <!-- 访问次数 -->
-            <div class="stat-item">
-                <span>本站访问量：</span>
-                <strong id="pageViews" class="loading">加载中...</strong>
-            </div>
-            <!-- 点赞数量 -->
-            <div class="stat-item">
-                <span>点赞数：</span>
-                <strong id="likeCount" class="loading">加载中...</strong>
-                <button id="likeButton">👍 点赞</button>
-            </div>
-            <p class="hint">点赞后数据会自动更新，刷新页面即可看到变化。</p>
-        </div>
+    <h1>访问计数 & 点赞功能演示</h1>
+    <div class="data-box">
+        <div class="data-item">当前访问次数：<span id="visitCount">加载中...</span></div>
+        <div class="data-item">当前点赞次数：<span id="likeCount">加载中...</span></div>
     </div>
+    <button id="likeBtn" onclick="handleLike()">点赞</button>
 
-<script>
-// 使用GitHub Pages链接获取数据（更稳定）
-const dataUrl = 'https://lopoph.github.io/666/data.json';
+    <script>
+        // 已替换为你的信息
+        const USER = "lopoph";
+        const REPO = "666";
+        const ISSUE_ID = "1";
+        const DATA_URL = `https://${USER}.github.io/${REPO}/data.json`;
+        const DISPATCH_URL = `https://api.github.com/repos/${USER}/${REPO}/dispatches`;
 
-// 获取并显示数据
-async function fetchData() {
-    try {
-        console.log('正在获取数据...');
-        const response = await fetch(`${dataUrl}?t=${new Date().getTime()}`);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP错误! 状态: ${response.status}`);
+        window.onload = async function() {
+            await loadData();
+            await triggerUpdate("visit");
+        };
+
+        async function loadData() {
+            try {
+                const res = await fetch(DATA_URL);
+                const data = await res.json();
+                document.getElementById("visitCount").textContent = data.visitCount || 0;
+                document.getElementById("likeCount").textContent = data.likeCount || 0;
+            } catch (err) {
+                console.error("加载数据失败：", err);
+                document.getElementById("visitCount").textContent = "加载失败";
+                document.getElementById("likeCount").textContent = "加载失败";
+            }
         }
-        
-        const data = await response.json();
-        console.log('获取到的数据:', data);
-        
-        // 更新页面显示
-        document.getElementById('pageViews').textContent = data.pageViews || 0;
-        document.getElementById('likeCount').textContent = data.likes || 0;
-        
-        if (data.lastUpdated) {
-            document.getElementById('lastUpdated').textContent = 
-                new Date(data.lastUpdated).toLocaleString();
+
+        async function triggerUpdate(type) {
+            if (type === "like" && localStorage.getItem("hasLiked")) {
+                alert("24小时内只能点赞1次哦！");
+                document.getElementById("likeBtn").disabled = true;
+                return;
+            }
+
+            try {
+                await fetch(DISPATCH_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        event_type: `update_${type}`,
+                        client_payload: { issue_id: ISSUE_ID }
+                    })
+                });
+
+                if (type === "like") {
+                    localStorage.setItem("hasLiked", "true");
+                    localStorage.setItem("likeExpire", Date.now() + 24 * 60 * 60 * 1000);
+                    document.getElementById("likeBtn").disabled = true;
+                    setTimeout(loadData, 1500);
+                } else {
+                    setTimeout(loadData, 1000);
+                }
+            } catch (err) {
+                console.error(`更新${type}失败：`, err);
+                alert(`更新${type === "visit" ? "访问数" : "点赞数"}失败，请稍后再试！`);
+            }
         }
-        
-    } catch (error) {
-        console.error('获取数据失败:', error);
-        // 优雅降级处理
-        document.getElementById('pageViews').textContent = '--';
-        document.getElementById('likeCount').textContent = '--';
-    }
-}
 
-// 点赞功能 - 模拟实现
-function triggerLike() {
-    const button = document.getElementById('likeButton');
-    const likeCountElement = document.getElementById('likeCount');
-    
-    // 立即反馈
-    button.disabled = true;
-    button.textContent = '点赞中...';
-    
-    // 乐观更新（先显示效果）
-    const currentLikes = parseInt(likeCountElement.textContent) || 0;
-    likeCountElement.textContent = currentLikes + 1;
-    
-    // 模拟API调用延迟
-    setTimeout(() => {
-        button.textContent = '👍 点赞成功！';
-        
-        // 3秒后恢复
-        setTimeout(() => {
-            button.disabled = false;
-            button.textContent = '👍 点赞';
-            // 重新获取真实数据
-            fetchData();
-        }, 2000);
-    }, 500);
-    
-    alert('感谢点赞！数据将在下次自动更新时保存。');
-}
+        function handleLike() {
+            triggerUpdate("like");
+        }
 
-// 页面加载初始化
-document.addEventListener('DOMContentLoaded', function() {
-    fetchData();
-    document.getElementById('likeButton').addEventListener('click', triggerLike);
-    
-    // 每60秒自动刷新数据
-    setInterval(fetchData, 60000);
-});
-</script>
-
+        if (localStorage.getItem("likeExpire") && Date.now() > localStorage.getItem("likeExpire")) {
+            localStorage.removeItem("hasLiked");
+            localStorage.removeItem("likeExpire");
+        } else if (localStorage.getItem("hasLiked")) {
+            document.getElementById("likeBtn").disabled = true;
+        }
+    </script>
 </body>
 </html>
