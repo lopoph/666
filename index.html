@@ -1,65 +1,72 @@
-<！doctype 超文本标记语言>
-<超文本标记语言 朗="zh-CN">
-<头>
-    <元 字符集="UTF-8">
-    <元 姓名="视口" 内容="宽度=设备宽度，初始比例=1.0">
-    <标题>访问计数&点赞页面</标题>
-    <风格>
-身体{最大宽度：600px；边缘：50px自动；文本对齐：中心；字体系列：Arial，无衬线；}
-.数据框{边缘：30px0；字体大小：20px；}
-.数据项{边缘：15px0；}
-#likeBtn{填充：12px30px；字体大小：18px；背景：#007bff；颜色：#FFF；边境：没有一个；边界半径：5PX；光标：指针；}
-    </风格>
-</头>
-<身体>
-    <H1>访问计数 & 点赞功能演示</H1>
-    <div 班级="数据框">
-        <div 班级="数据项">当前访问次数：<跨度 身份标识="visitCount">加载中...</跨度></div>
-        <div 班级="数据项">当前点赞次数：<跨度 身份标识="likeCount">加载中...</跨度></div>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>访问计数&点赞页面</title>
+    <style>
+        body { max-width: 600px; margin: 50px auto; text-align: center; font-family: Arial, sans-serif; }
+        .data-box { margin: 30px 0; font-size: 20px; }
+        .data-item { margin: 15px 0; }
+        #likeBtn { padding: 12px 30px; font-size: 18px; background: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>访问计数 & 点赞功能演示</h1>
+    <div class="data-box">
+        <div class="data-item">当前访问次数：<span id="visitCount">加载中...</span></div>
+        <div class="data-item">当前点赞次数：<span id="likeCount">加载中...</span></div>
     </div>
-    <按钮 身份标识="likeBtn" onClick="addLike()">点赞</按钮>
+    <button id="likeBtn" onclick="addLike()">点赞</button>
 
-    <脚本>
-Const data_URL="https://lopoph.github.io/666/data.json"；
-//触发工作流的API地址
-Const dispatch_URL="https://api.github.com/repos/lopoph/666/dispatches"；
-//你的GitHub PAT（临时写在这里，仅用于测试，正式环境建议用后端代理）
-Const GH_TOKEN="GHP_mgh9S7kpX53hlg2UdmlISX4WAhQvnQ4ebYfN"；
+    <script>
+        // 数据文件地址
+        const dataURL = "https://lopoph.github.io/666/data.json";
+        // 触发工作流的API地址
+        const dispatchURL = "https://api.github.com/repos/lopoph/666/dispatches";
+        // 你的GitHub PAT（替换为实际值）
+        const ghToken = "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";
 
-// 页面加载=访问
-窗户.onload=异步()=>{
-等候triggerWorkflow("访问")；
-loadDATA()；
-setInterval(loadDATA，5000)；
-};
+        // 页面加载时触发访问计数
+        window.onload = async () => {
+            await triggerWorkflow("visit");
+            loadData();
+            setInterval(loadData, 5000);
+        };
 
-// 加载数据
-异步功能loadDATA(){
-常数res=等候取来(data_URL+"？T="+新的日期().getTime())；
-Const数据=等候res.json()；
-文件.getElementById("visitCount").textContent=数据.visitCount||0；
-文件.getElementById("likeCount").textContent=数据.likeCount||0；
-}
+        // 加载数据
+        async function loadData() {
+            try {
+                const res = await fetch(dataURL + "?t=" + new Date().getTime());
+                const data = await res.json();
+                document.getElementById("visitCount").textContent = data.visitCount || 0;
+                document.getElementById("likeCount").textContent = data.likeCount || 0;
+            } catch (err) {
+                console.error("加载数据失败：", err);
+            }
+        }
 
-// 点赞
-异步功能addLike(){
-等候triggerWorkflow("喜欢")；
-loadDATA()；
-}
+        // 点赞功能
+        async function addLike() {
+            await triggerWorkflow("like");
+            loadData();
+        }
 
-// 触发工作流
-异步功能triggerWorkflow(类型){
-等候取来(dispatch_URL，{
-方法："邮件"，
-页眉: {
-"授权"：'标记${GH_TOKEN}'，
-"内容类型"："应用程序/json"
-},
-身体：JSON.使字符串化({
-事件类型(_T)：类型
-})
-});
-}
-    </脚本>
-</身体>
-</超文本标记语言>
+        // 触发工作流
+        async function triggerWorkflow(type) {
+            try {
+                await fetch(dispatchURL, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `token ${ghToken}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ event_type: type })
+                });
+            } catch (err) {
+                console.error("触发工作流失败：", err);
+            }
+        }
+    </script>
+</body>
+</html>
