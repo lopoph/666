@@ -12,47 +12,40 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install jq
+      - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y jq
+          sudo apt-get install -y jq curl
 
       - name: Sync Visit & Like Count
         id: sync
         run: |
-          # 1. 获取Issues评论（确保JSON格式）
+          # 1. 强制获取JSON格式的评论（添加Accept头）
           COMMENTS=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
-            "https://api.github.com/repos/lopoph/666/issues/${{ github.event.issue.number || 1 }}/comments")
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/lopoph/666/issues/1/comments")
           
-          # 2. 验证JSON合法性
-          if ! echo "$COMMENTS" | jq . > /dev/null 2>&1; then
+          # 2. 兜底：若获取失败，直接设为空数组
+          if [ -z "$COMMENTS" ] || ! echo "$COMMENTS" | jq . > /dev/null 2>&1; then
             COMMENTS="[]"
           fi
           
-          # 3. 统计点赞数
-          LIKE_COUNT=$(echo "$COMMENTS" | jq '[.[] | select(.body == "like")] | length')
+          # 3. 统计点赞数（兼容空数组）
+          LIKE_COUNT=$(echo "$COMMENTS" | jq '[.[] | select(.body | test("^like$"; "i"))] | length')
           
           # 4. 统计访问数
           TOTAL_COMMENTS=$(echo "$COMMENTS" | jq 'length')
           VISIT_COUNT=$((TOTAL_COMMENTS + 1))
           
           # 5. 生成data.json
-          NEW_DATA=$(jq -n \
-            --argjson visit "$VISIT_COUNT" \
-            --argjson like "$LIKE_COUNT" \
-            --arg time "$(date +'%Y-%m-%d %H:%M:%S')" \
-            '{
-              "visitCount": $visit,
-              "likeCount": $like,
-              "lastUpdateTime": $time
-            }')
-          
-          echo "$NEW_DATA" > data.json
+          echo "{
+            \"visitCount\": $VISIT_COUNT,
+            \"likeCount\": $LIKE_COUNT,
+            \"lastUpdateTime\": \"$(date +'%Y-%m-%d %H:%M:%S')\"
+          }" > data.json
 
-      - name: Commit Updated Data
+      - name: Commit Data
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Sync data: visit=${{ steps.sync.outputs.visit }}, like=${{ steps.sync.outputs.like }}"
+          commit_message: "Sync data: visit=$VISIT_COUNT, like=$LIKE_COUNT"
           file_pattern: "data.json"
-          commit_user_name: "GitHub Actions"
-          commit_user_email: "actions@github.com"
