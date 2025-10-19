@@ -1,8 +1,8 @@
 name: Sync Data From Issues
 on:
   schedule:
-    - cron: "*/1 * * * *"  # 每1分钟同步一次
-  issue_comment:          # 收到评论时同步
+    - cron: "*/1 * * * *"
+  issue_comment:
     types: [created]
 
 jobs:
@@ -13,23 +13,30 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install jq
-        run: sudo apt-get install -y jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
 
       - name: Sync Visit & Like Count
         id: sync
         run: |
-          # 1. 获取Issues的所有评论
+          # 1. 获取Issues评论（确保JSON格式）
           COMMENTS=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
             "https://api.github.com/repos/lopoph/666/issues/${{ github.event.issue.number || 1 }}/comments")
           
-          # 2. 统计点赞数（body为"like"的评论数量）
+          # 2. 验证JSON合法性
+          if ! echo "$COMMENTS" | jq . > /dev/null 2>&1; then
+            COMMENTS="[]"
+          fi
+          
+          # 3. 统计点赞数
           LIKE_COUNT=$(echo "$COMMENTS" | jq '[.[] | select(.body == "like")] | length')
           
-          # 3. 统计访问数（总评论数 + 1，1是初始访问）
+          # 4. 统计访问数
           TOTAL_COMMENTS=$(echo "$COMMENTS" | jq 'length')
           VISIT_COUNT=$((TOTAL_COMMENTS + 1))
           
-          # 4. 生成更新后的data.json
+          # 5. 生成data.json
           NEW_DATA=$(jq -n \
             --argjson visit "$VISIT_COUNT" \
             --argjson like "$LIKE_COUNT" \
@@ -40,7 +47,6 @@ jobs:
               "lastUpdateTime": $time
             }')
           
-          # 5. 写入data.json
           echo "$NEW_DATA" > data.json
 
       - name: Commit Updated Data
