@@ -3,7 +3,7 @@ name: Update Website Stats
 on:
   # 定时触发，每10分钟运行一次（cron表达式，可调整）
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '*/5 * * * *'
   # 允许在GitHub网页上手动触发此工作流
   workflow_dispatch:
   # 当数据文件被推送（即Action自己提交）时，避免重复运行
@@ -27,7 +27,7 @@ jobs:
 
       # 步骤2：设置Python环境
       - name: Setup Python
-        uses: actions/sup-python@v4
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
