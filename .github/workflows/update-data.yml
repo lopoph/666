@@ -1,37 +1,40 @@
-name: Sync Data
+name: 访问&点赞计数同步
 on:
   schedule:
-    - cron: "*/1 * * * *"
-  issue_comment:
-    types: [created]
+    - cron: "*/1 * * * *" # 每1分钟兜底同步
+  push:
+    paths:
+      - "visit-signal.txt" # 监测到“访问信号”触发
+      - "like-signal.txt"  # 监测到“点赞信号”触发
 
 jobs:
-  sync:
+  update-count:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: 拉取仓库代码
         uses: actions/checkout@v4
 
-      - name: Count Data
+      - name: 统计访问数&点赞数（读信号文件历史）
+        id: count
         run: |
-          # 统计点赞数（匹配所有"like"评论）
-          LIKE_COUNT=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
-            "https://api.github.com/repos/lopoph/666/issues/1/comments" | grep -o '"body": "like"' | wc -l)
-          
-          # 统计访问数（总评论数+1）
-          TOTAL_COMMENTS=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
-            "https://api.github.com/repos/lopoph/666/issues/1/comments" | grep -o '"id":' | wc -l)
-          VISIT_COUNT=$((TOTAL_COMMENTS + 1))
-          
-          # 写入data.json
+          # 访问数：统计visit-signal.txt的提交次数（每次访问1次提交）
+          VISIT_COUNT=$(git log --oneline -- visit-signal.txt | wc -l)
+          # 点赞数：统计like-signal.txt的提交次数（每次点赞1次提交）
+          LIKE_COUNT=$(git log --oneline -- like-signal.txt | wc -l)
+          # 输出给后续步骤用
+          echo "visit=$VISIT_COUNT" >> $GITHUB_OUTPUT
+          echo "like=$LIKE_COUNT" >> $GITHUB_OUTPUT
+
+      - name: 写入计数到data.json
+        run: |
           echo "{
-            \"visitCount\": $VISIT_COUNT,
-            \"likeCount\": $LIKE_COUNT,
+            \"visitCount\": ${{ steps.count.outputs.visit }},
+            \"likeCount\": ${{ steps.count.outputs.like }},
             \"lastUpdateTime\": \"$(date +'%Y-%m-%d %H:%M:%S')\"
           }" > data.json
 
-      - name: Commit Data
+      - name: 提交更新后的数据
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Update data: visit=$VISIT_COUNT, like=$LIKE_COUNT"
+          commit_message: "同步计数：访问=${{ steps.count.outputs.visit }}, 点赞=${{ steps.count.outputs.like }}"
           file_pattern: "data.json"
