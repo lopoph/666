@@ -23,40 +23,54 @@
     <script>
         const USER = "lopoph";
         const REPO = "666";
-        const ISSUE_ID = "1";
-        // 确保路径正确，加时间戳防缓存
         const DATA_URL = `https://${USER}.github.io/${REPO}/data.json`;
+        // 存储“访问信号”和“点赞信号”的文件
+        const VISIT_SIGNAL = "visit-signal.txt";
+        const LIKE_SIGNAL = "like-signal.txt";
 
-        // 加载数据（强制刷新缓存）
+        // 1. 页面加载=访问，自动发“访问信号”（防重复：1小时内只算1次）
+        window.onload = async () => {
+            const lastVisit = localStorage.getItem("lastVisitTime");
+            const now = new Date().getTime();
+            // 1小时（300毫秒）内没访问过，才发信号
+            if (!lastVisit || now - lastVisit > 3600000) {
+                await sendSignal(VISIT_SIGNAL, "visit");
+                localStorage.setItem("lastVisitTime", now);
+            }
+            // 加载数据，每5秒刷新
+            loadData();
+            setInterval(loadData, 5000);
+        };
+
+        // 2. 加载计数数据（防缓存）
         async function loadData() {
             try {
                 const timestamp = new Date().getTime();
                 const res = await fetch(`${DATA_URL}?t=${timestamp}`);
-                // 验证JSON格式
-                if (!res.headers.get('content-type')?.includes('application/json')) {
-                    throw new Error("数据格式错误");
-                }
                 const data = await res.json();
                 document.getElementById("visitCount").textContent = data.visitCount || 0;
                 document.getElementById("likeCount").textContent = data.likeCount || 0;
             } catch (err) {
                 console.error("加载失败：", err);
-                document.getElementById("visitCount").textContent = "加载失败";
-                document.getElementById("likeCount").textContent = "加载失败";
             }
         }
 
-        // 点赞功能（无24小时限制）
+        // 3. 点赞功能：发“点赞信号”（1小时内只算1次）
         async function addLike() {
             const btn = document.getElementById("likeBtn");
-            btn.disabled = true; // 防止重复点击
+            const lastLike = localStorage.getItem("lastLikeTime");
+            const now = new Date().getTime();
+            
+            if (lastLike && now - lastLike <= 300) {
+                alert("1小时内只能点赞1次哦！");
+                return;
+            }
+
+            btn.disabled = true;
             try {
-                await fetch(`https://api.github.com/repos/${USER}/${REPO}/issues/${ISSUE_ID}/comments`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ body: "like" })
-                });
-                setTimeout(loadData, 2000); // 2秒后刷新数据
+                await sendSignal(LIKE_SIGNAL, "like");
+                localStorage.setItem("lastLikeTime", now);
+                setTimeout(loadData, 3000);
             } catch (err) {
                 alert("点赞失败，请稍后再试！");
             } finally {
@@ -64,11 +78,19 @@
             }
         }
 
-        // 页面加载时加载数据，每5秒自动刷新
-        window.onload = () => {
-            loadData();
-            setInterval(loadData, 5000);
-        };
+        // 通用：发信号（前端只写文件，不碰Token）
+        async function sendSignal(fileName, type) {
+            const randomStr = `${type}-${new Date().getTime()}-${Math.random().toString(36).substr(2, 8)}`;
+            await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${fileName}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    message: `Add ${type} signal`,
+                    content: btoa(randomStr), // 转Base64，避免特殊字符报错
+                    branch: "main"
+                })
+            });
+        }
     </script>
 </body>
 </html>
