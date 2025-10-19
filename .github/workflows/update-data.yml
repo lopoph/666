@@ -1,7 +1,9 @@
 name: 计数同步
 on:
-  repository_dispatch:
-    types: [visit, like]
+  push:
+    paths:
+      - "visit-signal.txt"
+      - "like-signal.txt"
 
 jobs:
   update:
@@ -12,24 +14,13 @@ jobs:
         with:
           token: ${{ secrets.GH_TOKEN }}
       
-      - name: 统计计数
-        id: count
+      - name: 统计计数并更新
         run: |
-          # 访问数=visit事件触发次数
-          VISIT=$(git log --grep="trigger: visit" --oneline | wc -l)
-          # 点赞数=like事件触发次数
-          LIKE=$(git log --grep="trigger: like" --oneline | wc -l)
-          echo "visit=$VISIT" >> $GITHUB_OUTPUT
-          echo "like=$LIKE" >> $GITHUB_OUTPUT
-      
-      - name: 更新data.json
-        run: |
-          echo "{\"visitCount\":${{ steps.count.outputs.visit }},\"likeCount\":${{ steps.count.outputs.like }}}" > data.json
-      
-      - name: 提交数据
-        run: |
+          VISIT=$(git log --oneline -- visit-signal.txt | wc -l)
+          LIKE=$(git log --oneline -- like-signal.txt | wc -l)
+          echo "{\"visitCount\":$VISIT,\"likeCount\":$LIKE}" > data.json
           git config --global user.name "actions"
           git config --global user.email "actions@github.com"
           git add data.json
-          git commit -m "trigger: ${{ github.event.event_type }}"
+          git commit -m "同步计数"
           git push origin main
