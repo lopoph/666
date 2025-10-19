@@ -18,21 +18,15 @@
         <div class="data-item">当前访问次数：<span id="visitCount">加载中...</span></div>
         <div class="data-item">当前点赞次数：<span id="likeCount">加载中...</span></div>
     </div>
-    <button id="likeBtn" onclick="handleLike()">点赞</button>
+    <button id="likeBtn" onclick="addLike()">点赞</button>
 
     <script>
-        // 已替换为你的信息
         const USER = "lopoph";
         const REPO = "666";
         const ISSUE_ID = "1";
         const DATA_URL = `https://${USER}.github.io/${REPO}/data.json`;
-        const DISPATCH_URL = `https://api.github.com/repos/${USER}/${REPO}/dispatches`;
 
-        window.onload = async function() {
-            await loadData();
-            await triggerUpdate("visit");
-        };
-
+        // 加载数据
         async function loadData() {
             try {
                 const res = await fetch(DATA_URL);
@@ -40,53 +34,35 @@
                 document.getElementById("visitCount").textContent = data.visitCount || 0;
                 document.getElementById("likeCount").textContent = data.likeCount || 0;
             } catch (err) {
-                console.error("加载数据失败：", err);
-                document.getElementById("visitCount").textContent = "加载失败";
-                document.getElementById("likeCount").textContent = "加载失败";
+                console.error("加载失败：", err);
             }
         }
 
-        async function triggerUpdate(type) {
-            if (type === "like" && localStorage.getItem("hasLiked")) {
-                alert("24小时内只能点赞1次哦！");
-                document.getElementById("likeBtn").disabled = true;
+        // 点赞：给Issues发评论（无权限，仅留痕）
+        async function addLike() {
+            if (localStorage.getItem("hasLiked")) {
+                alert("24小时内只能点赞1次！");
                 return;
             }
-
             try {
-                await fetch(DISPATCH_URL, {
+                await fetch(`https://api.github.com/repos/${USER}/${REPO}/issues/${ISSUE_ID}/comments`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        event_type: `update_${type}`,
-                        client_payload: { issue_id: ISSUE_ID }
-                    })
+                    body: JSON.stringify({ body: "like" }) // 发“like”评论作为点赞标记
                 });
-
-                if (type === "like") {
-                    localStorage.setItem("hasLiked", "true");
-                    localStorage.setItem("likeExpire", Date.now() + 24 * 60 * 60 * 1000);
-                    document.getElementById("likeBtn").disabled = true;
-                    setTimeout(loadData, 1500);
-                } else {
-                    setTimeout(loadData, 1000);
-                }
+                localStorage.setItem("hasLiked", "true");
+                document.getElementById("likeBtn").disabled = true;
+                setTimeout(loadData, 2000);
             } catch (err) {
-                console.error(`更新${type}失败：`, err);
-                alert(`更新${type === "visit" ? "访问数" : "点赞数"}失败，请稍后再试！`);
+                alert("点赞失败，请稍后再试！");
             }
         }
 
-        function handleLike() {
-            triggerUpdate("like");
-        }
-
-        if (localStorage.getItem("likeExpire") && Date.now() > localStorage.getItem("likeExpire")) {
-            localStorage.removeItem("hasLiked");
-            localStorage.removeItem("likeExpire");
-        } else if (localStorage.getItem("hasLiked")) {
-            document.getElementById("likeBtn").disabled = true;
-        }
+        // 定时刷新数据（每5秒）
+        window.onload = () => {
+            loadData();
+            setInterval(loadData, 5000);
+        };
     </script>
 </body>
-</html>
+</html
