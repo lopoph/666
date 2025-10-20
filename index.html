@@ -1,69 +1,119 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>跨设备计数</title>
-    <style>
-        body { max-width: 600px; margin: 50px auto; text-align: center; font-family: Arial, sans-serif; }
-        .data-box { margin: 30px 0; font-size: 20px; }
-        button { padding: 12px 30px; font-size: 18px; background: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
-    </style>
-</head>
+<html>
 <body>
-    <h1>访问&点赞计数（跨设备实时）</h1>
-    <div class="data-box">
-        <div>当前访问次数：<span id="visit">加载中...</span></div>
-        <div>当前点赞次数：<span id="like">加载中...</span></div>
-    </div>
-    <button onclick="addLike()">点赞</button>
+  <div>访问量: <span id="visitCount">加载中...</span></div>
+  <button onclick="updateCount('like')">点赞</button>
+  <div>点赞数: <span id="likeCount">加载中...</span></div>
 
-    <script>
-        // 替换为你的信息
-        const GIST_ID = "eab3ee8d8cd26c542f06ca09004b82d9";
-        const GH_TOKEN = "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";
-        const GIST_URL = `https://api.github.com/gists/${GIST_ID}`;
+  <script>
+    // 替换为你的信息（和之前配置格式一致）
+    const CONFIG = {
+      GIST_ID: "eab3ee8d8cd26c542f06ca09004b82d9",
+      GH_TOKEN: "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",
+      FILE_NAME: "count.json" // 初始内容改这版：{"visit":0, "like":0}
+    };
 
-        // 页面加载=访问+加载计数
-        window.onload = async () => {
-            await updateCount("visit");
-            await loadCount();
-        };
+    // 1. 保留之前的日志工具（没改）
+    const log = (type, msg) => console[type](`[计数工具] ${msg}`);
 
-        // 加载计数（跨设备实时）
-        async function loadCount() {
-            const res = await fetch(GIST_URL, { headers: { "Authorization": `token ${GH_TOKEN}` } });
-            const data = await res.json();
-            const count = JSON.parse(data.files["count.json"].content);
-            document.getElementById("visit").textContent = count.visit;
-            document.getElementById("like").textContent = count.like;
+    // 2. 保留之前的配置验证（新增“检查计数类型合法性”）
+    function validateConfig() {
+      if (!CONFIG.GIST_ID) throw new Error("缺少GIST_ID配置");
+      if (!CONFIG.GH_TOKEN.startsWith("ghp_")) throw new Error("GH_TOKEN格式错误（应为ghp_开头）");
+      if (!CONFIG.FILE_NAME) throw new Error("缺少FILE_NAME配置");
+      log("log", "配置验证通过");
+    }
+
+    // 3. 保留之前的Gist数据获取（没改，仍验证401/404等错误）
+    async function fetchGistData() {
+      log("log", "开始获取Gist数据...");
+      const res = await fetch(`https://api.github.com/gists/${CONFIG.GIST_ID}`, {
+        headers: { Authorization: `token ${CONFIG.GH_TOKEN}` }
+      });
+      
+      if (res.status === 401) throw new Error(`Gist请求401：Token无效/权限不足`);
+      if (res.status === 404) throw new Error(`Gist请求404：GIST_ID不存在`);
+      if (!res.ok) throw new Error(`Gist请求失败：状态码${res.status}`);
+      
+      const data = await res.json();
+      log("log", "Gist数据获取成功");
+      return data;
+    }
+
+    // 4. 核心计数逻辑（仅新增“like计数处理”，保留原验证）
+    async function updateCount(type) {
+      try {
+        // 前置验证（沿用之前的配置验证）
+        validateConfig();
+        // 新增：验证计数类型（只能是visit或like，避免传错）
+        if (!["visit", "like"].includes(type)) throw new Error(`计数类型错误：只能是visit（访问）或like（点赞）`);
+        
+        // 获取Gist（沿用之前的逻辑）
+        const gistData = await fetchGistData();
+        
+        // 检查目标文件（沿用之前的逻辑）
+        if (!gistData.files[CONFIG.FILE_NAME]) throw new Error(`Gist中缺少${CONFIG.FILE_NAME}文件`);
+        
+        // 解析计数数据（新增“验证visit/like字段是否存在”）
+        let countData;
+        try {
+          countData = JSON.parse(gistData.files[CONFIG.FILE_NAME].content);
+          // 新增：若字段缺失，自动补0（避免解析后报错）
+          countData.visit = countData.visit === undefined ? 0 : countData.visit;
+          countData.like = countData.like === undefined ? 0 : countData.like;
+          // 新增：验证计数是否为数字（避免手动改JSON填了文字）
+          if (typeof countData.visit !== "number" || typeof countData.like !== "number") {
+            throw new Error(`${CONFIG.FILE_NAME}中visit/like需为数字`);
+          }
+        } catch (e) {
+          throw new Error(`${CONFIG.FILE_NAME}内容错误：${e.message}，正确格式应为{"visit":0, "like":0}`);
         }
 
-        // 更新计数（访问/点赞）
-        async function updateCount(type) {
-            // 先获取当前计数
-            const res = await fetch(GIST_URL, { headers: { "Authorization": `token ${GH_TOKEN}` } });
-            const data = await res.json();
-            const count = JSON.parse(data.files["count.json"].content);
-            
-            // 增加对应计数
-            count[type]++;
-            
-            // 写回Gist
-            await fetch(GIST_URL, {
-                method: "PATCH",
-                headers: { "Authorization": `token ${GH_TOKEN}`, "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    files: { "count.json": { content: JSON.stringify(count) } }
-                })
-            });
-        }
+        // 更新计数（按传入类型更新，不影响原逻辑）
+        countData[type] += 1;
+        log("log", `当前${type}计数：${countData[type]}`);
 
-        // 点赞
-        async function addLike() {
-            await updateCount("like");
-            await loadCount();
-        }
-    </script>
+        // 提交更新到Gist（沿用之前的逻辑）
+        log("log", "开始提交计数更新...");
+        const updateRes = await fetch(`https://api.github.com/gists/${CONFIG.GIST_ID}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `token ${CONFIG.GH_TOKEN}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            files: { [CONFIG.FILE_NAME]: { content: JSON.stringify(countData, null, 2) } }
+          })
+        });
+
+        if (!updateRes.ok) throw new Error(`计数提交失败：状态码${updateRes.status}`);
+        log("log", "计数更新提交成功");
+
+        // 显示结果（新增likeCount的更新，和visitCount逻辑一致）
+        document.getElementById("visitCount").textContent = countData.visit;
+        document.getElementById("likeCount").textContent = countData.like;
+      } catch (err) {
+        log("error", `执行失败：${err.message}`);
+        document.getElementById("visitCount").textContent = "加载失败";
+        document.getElementById("likeCount").textContent = "加载失败";
+      }
+    }
+
+    // 页面加载时初始化（新增likeCount的初始化，和visitCount逻辑一致）
+    window.onload = async () => {
+      try {
+        validateConfig();
+        const gistData = await fetchGistData();
+        const countData = JSON.parse(gistData.files[CONFIG.FILE_NAME].content);
+        // 补0逻辑，避免字段缺失显示undefined
+        document.getElementById("visitCount").textContent = countData.visit || 0;
+        document.getElementById("likeCount").textContent = countData.like || 0;
+      } catch (err) {
+        log("error", `初始化失败：${err.message}`);
+        document.getElementById("visitCount").textContent = "加载失败";
+        document.getElementById("likeCount").textContent = "加载失败";
+      }
+    };
+  </script>
 </body>
 </html>
