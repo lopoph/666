@@ -1,26 +1,100 @@
-name: 计数同步
+name: Update Count (With Validation)
 on:
-  push:
-    paths:
-      - "visit-signal.txt"
-      - "like-signal.txt"
+  repository_dispatch:
+    types: [update-count]
 
 jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - name: 拉取代码
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-      
-      - name: 统计计数并更新
+      - name: Validate Inputs
+        env:
+          COUNT_TYPE: ${{ github.event.client_payload.type }}
         run: |
-          VISIT=$(git log --oneline -- visit-signal.txt | wc -l)
-          LIKE=$(git log --oneline -- like-signal.txt | wc -l)
-          echo "{\"visitCount\":$VISIT,\"likeCount\":$LIKE}" > data.json
-          git config --global user.name "actions"
-          git config --global user.email "actions@github.com"
-          git add data.json
-          git commit -m "同步计数"
-          git push origin main
+          # 验证计数类型是否合法
+          if [[ "$COUNT_TYPE" != "visit" && "$COUNT_TYPE" != "like" ]]; then
+            echo "错误：计数类型无效，仅支持visit/like"
+            exit 1
+          fi
+          echo "输入验证通过：类型=$COUNT_TYPE"
+
+      - name: Fetch Gist Data
+        id: fetch_gist
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GIST_ID: "eab3ee8d8cd26c542f06ca09004b82d9"
+          FILE_NAME: "count.json"
+        run: |
+          # 获取Gist并验证响应
+          RESPONSE=$(curl -w "HTTP_STATUS:%{http_code}" -H "Authorization: token $GH_TOKEN" "https://api.github.com/gists/$GIST_ID")
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -oE "HTTP_STATUS:[0-9]+" | cut -d: -f2)
+          GIST_DATA=$(echo "$RESPONSE" | sed -E 's/HTTP_STATUS:[0-9]+$//')
+
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "错误：获取Gist失败，状态码=$HTTP_STATUS，响应=$GIST_DATA"
+            exit 1
+          fi
+          # 验证目标文件是否存在
+          if ! echo "$GIST_DATA" | jq -e ".files.\"$FILE_NAME\"" > /dev/null; then
+            echo "错误：Gist中缺少$FILE_NAME文件"
+            exit 1
+          fi
+          # 保存Gist数据到环境变量
+          echo "GIST_DATA=$GIST_DATA" >> $GITHUB_ENV
+          echo "Gist数据获取成功"
+
+      - name: Parse & Validate Count Data
+        id: parse_count
+        env:
+          FILE_NAME: "count.json"
+        run: |
+          # 解析计数字段
+          CONTENT=$(echo "$GIST_DATA" | jq -r ".files.\"$FILE_NAME\".content")
+          # 验证JSON格式
+          if ! echo "$CONTENT" | jq . > /dev/null; then
+            echo "错误：$FILE_NAME格式不是合法JSON"
+            exit 1
+          fi
+          # 验证visit/like字段是否存在且为数字
+          VISIT=$(echo "$CONTENT" | jq -r ".visit")
+          LIKE=$(echo "$CONTENT" | jq -r ".like")
+          if ! [[ "$VISIT" =~ ^[0-9]+$ && "$LIKE" =~ ^[0-9]+$ ]]; then
+            echo "错误：$FILE_NAME中visit/like需为数字"
+            exit 1
+          fi
+          # 保存计数到环境变量
+          echo "CONTENT=$CONTENT" >> $GITHUB_ENV
+          echo "VISIT=$VISIT" >> $GITHUB_ENV
+          echo "LIKE=$LIKE" >> $GITHUB_ENV
+          echo "计数数据验证通过：visit=$VISIT, like=$LIKE"
+
+      - name: Update Count
+        env:
+          COUNT_TYPE: ${{ github.event.client_payload.type }}
+        run: |
+          # 更新对应类型的计数
+          if [ "$COUNT_TYPE" = "visit" ]; then
+            NEW_VISIT=$((VISIT + 1))
+            NEW_CONTENT=$(echo "$CONTENT" | jq ".visit = $NEW_VISIT")
+          else
+            NEW_LIKE=$((LIKE + 1))
+            NEW_CONTENT=$(echo "$CONTENT" | jq ".like = $NEW_LIKE")
+          fi
+          echo "计数更新完成：$COUNT_TYPE=$(echo "$NEW_CONTENT" | jq -r ".${COUNT_TYPE}")"
+
+      - name: Commit to Gist
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GIST_ID: "eab3ee8d8cd26c542f06ca09004b82d9"
+          FILE_NAME: "count.json"
+        run: |
+          # 提交更新并验证结果
+          RESPONSE=$(curl -w "HTTP_STATUS:%{http_code}" -X PATCH -H "Authorization: token $GH_TOKEN" -H "Content-Type: application/json" \
+            "https://api.github.com/gists/$GIST_ID" \
+            -d "{\"files\":{\"$FILE_NAME\":{\"content\":\"$NEW_CONTENT\"}}}")
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -oE "HTTP_STATUS:[0-9]+" | cut -d: -f2)
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "错误：提交Gist失败，状态码=$HTTP_STATUS，响应=$RESPONSE"
+            exit 1
+          fi
+          echo "Gist更新成功"
