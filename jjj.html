@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实时互动演示</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #stats-panel {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .stats {
+            display: flex;
+            gap: 20px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            display: block;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #like-btn {
+            background-color: #ff4757;
+            color: white;
+        }
+        #like-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #barrage-panel {
+            margin: 20px 0;
+        }
+        #barrage-input {
+            width: 70%;
+            padding: 10px;
+        }
+        #barrage-color {
+            width: 60px;
+            height: 40px;
+        }
+        #barrage-send-btn {
+            background-color: #2ed573;
+            color: white;
+        }
+        #barrage-container {
+            height: 300px;
+            border: 1px solid #ddd;
+            overflow: hidden;
+            position: relative;
+            margin-top: 20px;
+        }
+        .barrage-item {
+            position: absolute;
+            white-space: nowrap;
+            animation: barrage-scroll 10s linear forwards;
+        }
+        @keyframes barrage-scroll {
+            from { transform: translateX(100%); }
+            to { transform: translateX(-100%); }
+        }
+        #status {
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>实时互动演示 (点赞 & 弹幕)</h1>
+    <p id="status">正在连接服务器...</p>
+
+    <section id="stats-panel">
+        <h2>实时数据</h2>
+        <div class="stats">
+            <div class="stat-item">
+                <span>访问人数</span>
+                <span id="visit-count" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                <span>点赞数</span>
+                <span id="like-count" class="stat-value">0</span>
+            </div>
+        </div>
+        <button id="like-btn" class="btn">点赞</button>
+    </section>
+
+    <section id="barrage-panel">
+        <h2>发送弹幕</h2>
+        <input type="text" id="barrage-input" placeholder="输入弹幕内容...">
+        <input type="color" id="barrage-color" value="#000000">
+        <button id="barrage-send-btn" class="btn">发送</button>
+    </section>
+
+    <div id="barrage-container"></div>
+
+    <script>
+        // 注意：将YOUR_FUNCTION_URL替换为您实际的函数URL
+        // 例如：wss://1383423404-gi8ft9bdo4.ap-shanghai.tencentscf.com
+        const functionUrl = 'wss://1383423404-gi8ft9bdo4.ap-shanghai.tencentscf.com';
+        const socket = new WebSocket(functionUrl);
+
+        // 获取DOM元素
+        const statusEl = document.getElementById('status');
+        const visitCountEl = document.getElementById('visit-count');
+        const likeCountEl = document.getElementById('like-count');
+        const likeBtn = document.getElementById('like-btn');
+        const barrageInput = document.getElementById('barrage-input');
+        const barrageColor = document.getElementById('barrage-color');
+        const barrageSendBtn = document.getElementById('barrage-send-btn');
+        const barrageContainer = document.getElementById('barrage-container');
+
+        // WebSocket连接状态更新
+        socket.onopen = function(event) {
+            statusEl.textContent = "已连接到服务器";
+            statusEl.style.color = "green";
+        };
+
+        socket.onclose = function(event) {
+            statusEl.textContent = "连接已断开，尝试重新连接...";
+            statusEl.style.color = "red";
+            // 5秒后尝试重新连接
+            setTimeout(() => {
+                window.location.reload();
+            }, 5000);
+        };
+
+        // 接收服务器消息
+        socket.onmessage = function(event) {
+            const message = JSON.parse(event.data);
+            console.log('收到服务器消息:', message);
+
+            switch (message.type) {
+                case 'init':
+                    // 初始化数据
+                    visitCountEl.textContent = message.data.visitCount;
+                    likeCountEl.textContent = message.data.likeCount;
+                    break;
+                case 'like_update':
+                    // 更新点赞数
+                    likeCountEl.textContent = message.data;
+                    break;
+                case 'new_barrage':
+                    // 显示新弹幕
+                    displayBarrage(message.data);
+                    break;
+                case 'error':
+                    alert(message.message);
+                    break;
+            }
+        };
+
+        // 点赞按钮点击事件
+        likeBtn.onclick = function() {
+            socket.send(JSON.stringify({
+                type: 'user_like'
+            }));
+            // 禁用按钮，防止重复点击
+            likeBtn.disabled = true;
+            likeBtn.textContent = '已点赞';
+        };
+
+        // 发送弹幕按钮点击事件
+        barrageSendBtn.onclick = function() {
+            sendBarrage();
+        };
+        // 按回车发送弹幕
+        barrageInput.onkeypress = function(e) {
+            if (e.key === 'Enter') {
+                sendBarrage();
+            }
+        };
+
+        function sendBarrage() {
+            const text = barrageInput.value.trim();
+            const color = barrageColor.value;
+            if (text) {
+                socket.send(JSON.stringify({
+                    type: 'send_barrage',
+                    data: {
+                        text: text,
+                        color: color
+                    }
+                }));
+                barrageInput.value = ''; // 清空输入框
+            }
+        }
+
+        function displayBarrage(barrageData) {
+            const barrageEl = document.createElement('div');
+            barrageEl.className = 'barrage-item';
+            barrageEl.textContent = barrageData.text;
+            barrageEl.style.color = barrageData.color;
+            barrageEl.style.top = Math.random() * 250 + 'px'; // 随机高度
+
+            barrageContainer.appendChild(barrageEl);
+
+            // 弹幕动画结束后移除元素
+            setTimeout(() => {
+                barrageEl.remove();
+            }, 10000);
+        }
+
+        socket.onerror = function(error) {
+            console.error('WebSocket错误:', error);
+            statusEl.textContent = "连接错误: " + error.message;
+            statusEl.style.color = "red";
+        };
+    </script>
+</body>
+</html>
