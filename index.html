@@ -1,229 +1,2593 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
 <script>LA.init({id:"3Np9bHGS3zuV85Fh",ck:"3Np9bHGS3zuV85Fh"})</script>
-    <script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/3Np9bHGS3zuV85Fh/quote.js?theme=0&col=true&f=12&badge=icon_0&icon=center"></script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>实时互动演示</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        #stats-panel {
-            background: #f5f5f5;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        .stats {
-            display: flex;
-            gap: 20px;
-        }
-        .stat-item {
-            text-align: center;
-        }
-        .stat-value {
-            font-size: 2em;
-            font-weight: bold;
-            display: block;
-        }  
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        #like-btn {
-            background-color: #ff4757;
-            color: white;
-        }
-        #like-btn:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-        #barrage-panel {
-            margin: 20px 0;
-        }
-        #barrage-input {
-            width: 70%;
-            padding: 10px;
-        }
-        #barrage-color {
-            width: 60px;
-            height: 40px;
-        }
-        #barrage-send-btn {
-            background-color: #2ed573;
-            color: white;
-        }
-        #barrage-container {
-            height: 300px;
-            border: 1px solid #ddd;
-            overflow: hidden;
-            position: relative;
-            margin-top: 20px;
-        }
-        .barrage-item {
-            position: absolute;
-            white-space: nowrap;
-            animation: barrage-scroll 10s linear forwards;
-        }
-        @keyframes barrage-scroll {
-            from { transform: translateX(100%); }
-            to { transform: translateX(-100%); }
-        }
-        #status {
-            color: #666;
-            font-style: italic;
-        }
-    </style>
+  <title>修仙计算器</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+  
+  
+/* 自定义提示框样式 - 可单独调节长宽高 */
+.custom-showCustomAlert {
+    position: fixed;
+    top: 75%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(40, 40, 60, 0.98);
+    color: white;
+    text-align: center;
+    backdrop-filter: blur(15px);
+    display: none;
+    z-index: 10000;
+    border: 3px solid rgba(255, 215, 0, 0.6);
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.8);
+    animation: fadeInScale 0.4s ease-out;
+    
+    /* 🎯 单独调节提示框尺寸 - 修改这里的数字 */
+    width: 300px;          /* 提示框宽度 */
+    height: 100px;         /* 提示框高度 */
+    border-radius: 20px;    /* 圆角大小 */
+    padding: 10px;         /* 内边距 */
+    
+    /* 内部布局 */
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.custom-showCustomAlert.show {
+    display: flex;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.7);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* 🎯 单独调节按钮尺寸 - 修改这里的数字 */
+.custom-showCustomAlert button {
+    background: linear-gradient(135deg, #4a6fa5, #3a5f95);
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    /* 按钮尺寸调节 */
+    width: 50px;          /* 按钮宽度 */
+    height: 50px;          /* 按钮高度 */
+    border-radius: 100px;    /* 按钮圆角 */
+    font-size: 0.8rem;     /* 按钮文字大小 */
+    margin-top: 15px;      /* 按钮上边距 */
+}
+
+.custom-showCustomAlert button:hover {
+    background: linear-gradient(135deg, #3a5f95, #2a4f85);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* 消息内容样式 */
+#alertMessage {
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    line-height: 1.2;
+}
+
+/* 遮罩层 */
+#overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    backdrop-filter: blur(5px);
+}
+/* 结果面板的滚动动画 */
+.result-section {
+    transition: all 0.5s ease;
+    scroll-margin-top: 20px; /* 滚动时的偏移量 */
+}
+
+/* 确保页面有平滑滚动 */
+html {
+    scroll-behavior: smooth;
+}
+
+
+
+
+#music-info {
+    position: fixed;
+    top: 15px;
+    left: 0;
+    font-size: 14px;
+    color: #4a6fa5;
+    background: transparent;
+    padding: 6px 12px;
+    z-index: 1001;
+    display: none;
+    white-space: nowrap;
+    pointer-events: none;
+    font-weight: bold;
+    text-shadow: 0 1px 3px rgba(255,255,255,0.8);
+    font-family: 'Microsoft YaHei', Arial, sans-serif;
+    will-change: transform;
+}
+
+/* 歌曲名称动画 - 滚动3次 */
+@keyframes songScroll {
+    0% { 
+        transform: translateX(100vw); 
+    }
+    100% { 
+        transform: translateX(calc(-100% - 20px)); /* 确保完全滚出 */
+    }
+}
+
+/* 错误信息动画 - 滚动1次 */
+@keyframes errorScroll {
+    0% { 
+        transform: translateX(100vw); 
+    }
+    100% { 
+        transform: translateX(calc(-100% - 20px)); /* 确保完全滚出 */
+    }
+}
+
+/* 扫雷界面中保持显示 */
+#mine-game #music-info {
+    z-index: 1003;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    #music-info {
+        font-size: 12px;
+        top: 10px;
+        padding: 4px 8px;
+    }
+}
+
+@keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* 扫雷游戏样式 */
+    .mine-icon {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      background-color: #ff5555;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .mine-game {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: white;
+      z-index: 1001;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow: auto;
+    }
+
+    .mine-title {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 20px;
+      color: #4a6fa5;
+    }
+
+    .difficulty-selector {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .difficulty-btn {
+      padding: 10px 20px;
+      background-color: #4a6fa5;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .game-info-container {
+      display: flex;
+      flex-direction: column;
+      height: calc(100% - 150px);
+    }
+
+    .game-info-container.hidden {
+      display: none;
+    }
+
+    .game-info {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 10px;
+    }
+
+    .mine-time-row {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-bottom: 5px;
+    }
+
+    #mine-count, #game-time {
+      min-width: 120px;
+      font-size: 1.1rem;
+    }
+
+    #mine-count {
+      text-align: left;
+    }
+
+    #game-time {
+      text-align: right;
+    }
+
+    .flag-mode-row {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .mine-board {
+      display: grid;
+      grid-template-columns: repeat(var(--cols, 8), 1fr);
+      gap: 2px;
+      margin: 0 auto;
+      width: 90%;
+      max-width: 100%;
+      flex-grow: 1;
+    }
+
+    .mine-cell {
+      aspect-ratio: 1;
+      background-color: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mine-cell span {
+      display: inline-block;
+      transform: scale(0.85);
+      line-height: 1;
+    }
+
+    .mine-board.easy .mine-cell {
+      font-size: 24px;
+    }
+
+    .mine-board.medium .mine-cell {
+      font-size: 18px;
+    }
+
+    .mine-board.hard .mine-cell {
+      font-size: 14px;
+    }
+
+    .mine-cell.revealed {
+      background-color: #f5f5f5;
+    }
+
+    .mine-cell.flagged {
+      background-color: #ffcccc;
+    }
+
+    .mine-cell.mine {
+      background-color: #ff5555;
+      color: white;
+    }
+
+    /* 精准定位插旗按钮样式 */
+    #flag-mode-btn {
+      padding: 4px 10px !important;
+      margin: 0 auto !important;
+      background-color: #4a6fa5 !important;
+      color: white !important;
+      border: none !important;
+      border-radius: 4px !important;
+      font-size: 0.95rem !important;
+      line-height: 1.25 !important;
+      box-shadow: none !important;
+      width: auto !important;
+      display: inline-block !important;
+    }
+
+    #flag-mode-btn.active {
+      background-color: #ff5555 !important;
+      padding: 4px 10px !important;
+    }
+
+    /* 确保按钮容器不限制宽度 */
+    .flag-mode-row {
+      padding: 0 !important;
+      margin: 5px 0 !important;
+    }
+
+    .game-controls {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .control-btn {
+      padding: 10px 20px;
+      background-color: #4a6fa5;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .exit-btn {
+      background-color: #ff5555;
+    }
+    
+    /* 数字颜色样式 */
+    .mine-cell .number-1 {
+      color: #0000FF;
+    }
+
+    .mine-cell .number-2 {
+      color: #008000;
+    }
+
+    .mine-cell .number-3 {
+      color: #FF0000;
+    }
+
+    .mine-cell .number-4 {
+      color: #800080;
+    }
+
+    .mine-cell .number-5 {
+      color: #800000;
+    }
+
+    /* 旋转动画 */
+    .rotating-image {
+      animation: rotation 3s infinite linear;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    @keyframes rotation {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(359deg);
+      }
+    }
+
+    body {
+      font-family: 'Microsoft YaHei', Arial, sans-serif;
+      background-color: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+      touch-action: pan-y;
+      overflow-x: hidden;
+    }
+
+    h1 {
+      color: #4a6fa5;
+      text-align: center;
+      margin-bottom: 0;
+      padding-bottom: 0px;
+    }
+
+    .qq-group-section {
+      margin: 10px auto;
+      padding: 5px 10px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    /* 标签页容器优化 */
+    .tab-container {
+      display: flex;
+      margin-bottom: 10px;
+      width: 100%;
+      height: 50px;
+    }
+
+    .tab {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #e0e0e0;
+      cursor: pointer;
+      border-radius: 5px 5px 0 0;
+      margin-right: 5px;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    .tab.active {
+      background-color: #4a6fa5;
+      color: white;
+    }
+
+    .tab:hover {
+      background-color: #d0d0d0;
+    }
+
+    .tab.active:hover {
+      background-color: #3a5f95;
+    }
+
+    /* 内容区域滑动动画 */
+    .content-container {
+      position: relative;
+      overflow: hidden;
+      height: auto;
+      touch-action: pan-y;
+    }
+
+    .tab-content {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      opacity: 0;
+      transform: translateX(100%);
+      transition: transform 0.4s ease, opacity 0.4s ease;
+      pointer-events: none;
+    }
+
+    .tab-content.active {
+      position: relative;
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: all;
+    }
+
+    .tab-content.slide-left {
+      transform: translateX(-100%);
+    }
+
+    .tab-content.slide-right {
+      transform: translateX(100%);
+    }
+
+    .input-section {
+      background-color: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      margin-bottom: 20px;
+      touch-action: pan-y;
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    label {
+      font-weight: bold;
+      color: #4a6fa5;
+      min-width: 80px;
+    }
+
+    input[type="number"] {
+      width: 100px;
+      padding: 8px;
+      border: 1px solid #e0e0e0;
+      border-radius: 5px;
+      margin-right: 10px;
+    }
+
+    select {
+      padding: 8px;
+      border: 1px solid #e0e0e0;
+      border-radius: 5px;
+      width: 90px;
+      margin-left: -3%;
+    }
+
+    button {
+      padding: 12px;
+      background-color: #4a6fa5;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .result-section {
+      background: linear-gradient(135deg, #f0f4ff, #e6eeff);
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .result-label {
+      font-weight: bold;
+    }
+
+    .result-value {
+      font-weight: bold;
+      color: #4a6fa5;
+    }
+
+    .dan-value {
+      color: #d63384;
+      font-weight: bold;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .hint {
+      font-size: 0.8rem;
+      color: #888;
+      margin-left: 5px;
+    }
+
+    /* 加成区域样式 */
+    .bonus-container {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 15px;
+      margin-left: -4%;
+    }
+
+    .bonus-box {
+      flex: 1;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 15px;
+    }
+
+    .life-bonus {
+      background-color: #e6f7e6;
+    }
+
+    .attack-bonus {
+      background-color: #ffe6e6;
+    }
+
+    .bonus-title {
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+    }
+
+    .bonus-input-group {
+      margin-bottom: 10px;
+    }
+
+    .bonus-label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    .bonus-input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    .bonus-hint {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 10px;
+    }
+
+    /* 新增样式：基础生命和基础攻击背景灰色，输入框减少30% */
+    .base-attributes-group {
+      background-color: #f0f0f0;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+
+    .base-attributes-group .input-row input[type="number"] {
+      width: 70px;
+    }
+
+    /* 目标战力背景灰色，输入框减少30% */
+    .target-power-group {
+      background-color: #f0f0f0;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+
+    .target-power-group .input-row input[type="number"] {
+      width: 70px;
+    }
+
+    /* 初始战力和目标战力背景灰色，输入框减少30% */
+    .bath-power-group {
+      background-color: #f0f0f0;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+
+    .bath-power-group .input-row input[type="number"] {
+      width: 70px;
+    }
+
+    /* 每五秒背景灰色，输入框减少30% */
+    .growth-rate-group {
+      background-color: #f0f0f0;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+
+    .growth-rate-group .input-row input[type="number"] {
+      width: 70px;
+    }
+
+    .copy-btn {
+      padding: 2px 8px;
+      background: #4a6fa5;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      width: auto;
+      min-width: 40px;
+      white-space: nowrap;
+    }
+    
+    /* 吃丹计算器特有样式 - 修改后的样式 */
+    .dan-input-group {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 15px;
+      gap: 5px;
+    }
+    
+    .life-input, .attack-input {
+      background-color: #e6f7e6;
+      border-radius: 5px;
+      padding: 8px;
+      border: 1px solid #c3e6c3;
+      width: auto;
+      min-width: 80px;
+      text-align: center;
+    }
+    
+    .attack-input {
+      background-color: #ffe6e6;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .dan-quantity-container {
+      width: 200px;
+      margin: 15px auto;
+      text-align: center;
+      background-color: #f0f0f0; /* 灰色背景 */
+      border-radius: 8px;
+      padding: 10px;
+    }
+    
+    .dan-quantity-container input {
+      width: 90%;
+      padding: 8px;
+      border: 1px solid #e0e0e0;
+      border-radius: 5px;
+      text-align: center;
+    }
+    
+    .dan-bonus-container {
+      background-color: #e6e6ff; /* 紫色背景 */
+      border-radius: 8px;
+      padding: 15px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    
+    .dan-bonus-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+      color: #4a6fa5;
+    }
+    
+    .dan-bonus-input {
+      display: inline-block;
+    }
+    
+    .dan-bonus-input input {
+      width: 120px;
+      padding: 8px;
+      border: 1px solid #d0b0f0;
+      border-radius: 3px;
+      background-color: #fffffff; /* 输入框无颜色 */
+      text-align: center;
+    }
+    
+    .dan-hint {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 10px;
+    }
+    
+    .reverse-power-container {
+      background-color: #fffacd; /* 金色背景 */
+      border-radius: 8px;
+      padding: 15px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    
+    .reverse-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+      color: #4a6fa5;
+    }
+    
+    .reverse-input-group {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin: 15px auto;
+    }
+    
+    .reverse-input-group input {
+      width: 120px;
+      padding: 8px;
+      border: 1px solid #e0d0a0;
+      border-radius: 3px;
+      background-color: #ffffffff; /* 输入框无颜色 */
+      text-align: center;
+    }
+    
+    .button-container {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    
+    .button-container button {
+      flex: 1;
+    }
+    
+    .reverse-button {
+      background-color: #d63384;
+    }
+    
+    .reverse-button:hover {
+      background-color: #c22575;
+    }
+
+    /* 福袋悬停动画 */
+#lucky-bag:hover {
+  animation: bounce 0.5s infinite alternate;
+  text-shadow: 0 0 15px gold;
+}
+
+@keyframes bounce {
+  from { transform: rotate(-15deg); }
+  to { transform: rotate(15deg); }
+}
+
+/* 面板展开动画 */
+.stats-visible {
+  transform: translateX(0) !important;
+}
+
+/* 添加动画效果 */
+#giftIcon:hover {
+  animation: bounce 0.5s infinite alternate;
+}
+
+@keyframes bounce {
+  from { transform: rotate(-15deg) scale(1); }
+  to { transform: rotate(15deg) scale(1.1); }
+}
+
+#statsPanel {
+  transition: all 0.3s ease-out;
+  transform-origin: top left;
+}
+    
+    
+#giftIcon {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 10000;
+  cursor: pointer;
+  font-size: 34px;
+  transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  
+  /* 完全透明背景 */
+  background: none;
+  border: none;
+  
+  /* 多层发光效果 */
+  text-shadow: 
+    0 0 5px #fff,
+    0 0 10px rgba(255, 215, 0, 0.8),
+    0 0 15px rgba(255, 215, 0, 0.6),
+    0 0 20px rgba(255, 215, 0, 0.4),
+    0 0 35px rgba(255, 215, 0, 0.3),
+    0 0 40px rgba(255, 215, 0, 0.2);
+  
+  /* 动画效果 */
+  animation: gentleGlow 3s ease-in-out infinite alternate;
+}
+
+/* 温和的脉动发光动画 */
+@keyframes gentleGlow {
+  from {
+    text-shadow: 
+      0 0 5px #fff,
+      0 0 10px rgba(255, 215, 0, 0.8),
+      0 0 15px rgba(255, 215, 0, 0.6),
+      0 0 20px rgba(255, 215, 0, 0.4);
+  }
+  to {
+    text-shadow: 
+      0 0 10px #fff,
+      0 0 20px rgba(255, 215, 0, 1),
+      0 0 30px rgba(255, 215, 0, 0.8),
+      0 0 40px rgba(255, 215, 0, 0.6);
+  }
+}
+
+#giftIcon:hover {
+  animation: intenseGlow 0.5s ease-in-out infinite alternate;
+  transform: scale(1.15) rotate(5deg);
+}
+
+/* 悬停时的强烈发光动画 */
+@keyframes intenseGlow {
+  from {
+    text-shadow: 
+      0 0 10px #fff,
+      0 0 20px rgba(255, 215, 0, 1),
+      0 0 30px rgba(255, 215, 0, 0.9);
+  }
+  to {
+    text-shadow: 
+      0 0 15px #fff,
+      0 0 30px rgba(255, 215, 0, 1),
+      0 0 45px rgba(255, 215, 0, 1),
+      0 0 60px rgba(255, 100, 100, 0.8);
+  }
+}
+
+#giftIcon.active {
+  animation: activeGlow 1s ease-in-out infinite alternate;
+}
+
+/* 激活状态的发光动画 */
+@keyframes activeGlow {
+  from {
+    text-shadow: 
+      0 0 10px #fff,
+      0 0 20px rgba(255, 100, 100, 1),
+      0 0 30px rgba(255, 100, 100, 0.9);
+  }
+  to {
+    text-shadow: 
+      0 0 15px #fff,
+      0 0 30px rgba(255, 100, 100, 1),
+      0 0 45px rgba(255, 100, 100, 1),
+      0 0 60px rgba(255, 50, 50, 0.8);
+  }
+}
+
+    /* 统计面板样式 */
+    #statsPanel {
+      position: fixed;
+      top: 80px;
+      left: 20px;
+      z-index: 9999;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      background: linear-gradient(135deg, rgba(40,40,60,0.95) 0%, rgba(30,30,50,0.95) 100%);
+      padding: 20px;
+      border-radius: 16px;
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,215,0,0.3);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      min-width: 220px;
+      font-family: 'Microsoft YaHei', Arial, sans-serif;
+    }
+    
+  </style>
 </head>
+
 <body>
-    <h1>实时互动演示 (点赞 & 弹幕)</h1>
-    <p id="status">正在连接服务器...</p>
-<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/3Np9bHGS3zuV85Fh/quote.js?theme=0&f=12"></script>
-    <section id="stats-panel">
-        <h2>实时数据</h2>
-        <div class="stats">
-            <div class="stat-item">
-                <span>访问人数</span>
-                <span id="visit-count" class="stat-value">0</span>
+<!-- 音乐信息显示容器 -->
+<div id="music-info"></div>
+
+  <h1 style="display: flex; align-items: center; justify-content: center;">
+    <i class="fas fa-yin-yang rotating-image" style="color: #4a6fa5; font-size: 40px; margin-right: 15px;"></i>
+    修仙计算器
+  </h1>
+<!-- 自定义提示框 -->
+<div id="customAlert" class="custom-showCustomAlert">
+    <div id="alertMessage"></div>
+    <button onclick="hideCustomAlert()">确定</button>
+</div>
+
+<!-- 遮罩层 -->
+<div id="overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999;"></div>
+
+  <div class="qq-group-section">
+    <span>有没有吊大的进群带带我：371408377</span>
+    <button onclick="copyQQGroup()" class="copy-btn">复制</button>
+  </div>
+
+  <div class="tab-container">
+    <div class="tab active" onclick="switchTab('power', 0)">战力</div>
+    <div class="tab" onclick="switchTab('base', 1)">基础</div>
+    <div class="tab" onclick="switchTab('dan', 2)">吃丹</div>
+    <div class="tab" onclick="switchTab('bath', 3)">泡澡</div>
+  </div>
+
+  <div class="content-container" id="content-container">
+    <div class="input-section">
+      <!-- 战力计算 -->
+      <div id="power-tab" class="tab-content active">
+        <!-- 基础生命和基础攻击 - 背景灰色，输入框减少30% -->
+        <div class="base-attributes-group">
+          <div class="input-group">
+            <div class="input-row">
+              <label>基础生命：</label>
+              <input type="number" id="base-life" step="0.01" placeholder="输入数值">
+              <select id="base-life-unit">
+                <option value="1" selected>个</option>
+                <option value="10000">万</option>
+                <option value="100000000">亿</option>
+                <option value="1000000000000">兆</option>
+                <option value="10000000000000000">京</option>
+                <option value="100000000000000000000">垓</option>
+                <option value="1000000000000000000000000">秭</option>
+                <option value="10000000000000000000000000000">穰</option>
+                <option value="100000000000000000000000000000000">沟</option>
+                <option value="1000000000000000000000000000000000000">涧</option>
+                <option value="10000000000000000000000000000000000000000">正</option>
+                <option value="100000000000000000000000000000000000000000000">载</option>
+                <option value="1000000000000000000000000000000000000000000000000">极</option>
+                <option value="10000000000000000000000000000000000000000000000000000">恒河沙</option>
+                               <option value="100000000000000000000000000000000000000000000000000000000">阿僧祇</option>
+                <option value="0000000000000000000000000000000000000000000000000000000000000">那由他</option>
+                <option value="10000000000000000000000000000000000000000000000000000000000000000">不可思议</option>
+                <option value="100000000000000000000000000000000000000000000000000000000000000000000000000000000000">无量</option>
+                <option value="1000000000000000000000000000000000000000000000000000000000000000000000000">大数</option>
+                <option value="10000000000000000000000000000000000000000000000000000000000000000000000000000">无敌</option>
+              </select>
             </div>
-            <div class="stat-item">
-                <span>点赞数</span>
-                <span id="like-count" class="stat-value">0</span>
+            <div class="input-row">
+              <label>基础攻击：</label>
+              <input type="number" id="base-attack" step="0.01" placeholder="输入数值">
+              <select id="base-attack-unit">
+                <option value="1" selected>个</option>
+                <option value="10000">万</option>
+                <option value="100000000">亿</option>
+                <option value="1000000000000">兆</option>
+                <option value="10000000000000000">京</option>
+                <option value="100000000000000000000">垓</option>
+                <option value="1000000000000000000000000">秭</option>
+                <option value="10000000000000000000000000000">穰</option>
+                <option value="100000000000000000000000000000000">沟</option>
+                <option value="1000000000000000000000000000000000000">涧</option>
+                <option value="10000000000000000000000000000000000000000">正</option>
+                <option value="100000000000000000000000000000000000000000000">载</option>
+                <option value="1000000000000000000000000000000000000000000000000">极</option>
+                <option value="10000000000000000000000000000000000000000000000000000">恒河沙</option>
+                <option value="100000000000000000000000000000000000000000000000000000000">阿僧祇</option>
+                <option value="1000000000000000000000000000000000000000000000000000000000000">那由他</option>
+                <option value="10000000000000000000000000000000000000000000000000000000000000000">不可思议</option>
+                <option value="100000000000000000000000000000000000000000000000000000000000000000000">无量</option>
+                <option value="1000000000000000000000000000000000000000000000000000000000000000000000000">大数</option>
+                <option value="10000000000000000000000000000000000000000000000000000000000000000000000000000">无敌</option>
+              </select>
             </div>
+          </div>
         </div>
-        <button id="like-btn" class="btn">点赞</button>
-    </section>
 
-    <section id="barrage-panel">
-        <h2>发送弹幕</h2>
-        <input type="text" id="barrage-input" placeholder="输入弹幕内容...">
-        <input type="color" id="barrage-color" value="#000000">
-        <button id="barrage-send-btn" class="btn">发送</button>
-    </section>
+        <div class="bonus-container">
+          <div class="bonus-box life-bonus">
+            <div class="bonus-title">生命</div>
+            <div class="bonus-input-group">
+              <label class="bonus-label">加成：</label>
+              <input type="number" id="life-bonus" step="0.01" placeholder="输入百分比" class="bonus-input">
+            </div>
+            <div class="bonus-input-group">
+              <label class="bonus-label">提升：</label>
+              <input type="number" id="life-boost" step="0.01" placeholder="输入百分比" class="bonus-input" oninput="syncBoostValues('power', 'life', this.value)">
+            </div>
+            <div class="bonus-input-group">
+              <label class="bonus-label">增幅：</label>
+              <input type="number" id="life-amplify" step="0.01" placeholder="输入百分比" class="bonus-input">
+            </div>
+          </div>
+          
+          <div class="bonus-box attack-bonus">
+            <div class="bonus-title">攻击</div>
+            <div class="bonus-input-group">
+              <label class="bonus-label">加成：</label>
+              <input type="number" id="attack-bonus" step="0.01" placeholder="输入百分比" class="bonus-input">
+            </div>
+            <div class="bonus-input-group">
+              <label class="bonus-label">提升：</label>
+              <input type="number" id="attack-boost" step="0.01" placeholder="输入百分比" class="bonus-input" oninput="syncBoostValues('power', 'attack', this.value)">
+            </div>
+            <div class="bonus-input-group">
+              <label class="bonus-label">增幅：</label>
+              <input type="number" id="attack-amplify" step="0.01" placeholder="输入百分比" class="bonus-input">
+            </div>
+          </div>
+        </div>
+        <div class="bonus-hint">不填默认为0</div>
 
-    <div id="barrage-container"></div>
+        <button onclick="calculatePower()">计算战力</button>
+      </div>
 
-    <script>
-        // 注意：将YOUR_FUNCTION_URL替换为您实际的函数URL
-        // 例如：wss://1383423404-gi8ft9bdo4.ap-shanghai.tencentscf.com
-        const functionUrl = 'wss://1383423404-gi8ft9bdo4.ap-shanghai.tencentscf.com';
-        const socket = new WebSocket(functionUrl);
+      <!-- 基础反推 -->
+      <div id="base-tab" class="tab-content">
+        <!-- 目标战力 - 背景灰色，输入框减少30% -->
+        <div class="target-power-group">
+          <div class="input-group">
+            <div class="input-row">
+              <label>目标战力：</label>
+              <input type="number" id="target-power" step="0.01" placeholder="输入数值">
+              <select id="power-unit">
+                <option value="1" selected>个</option>
+                <option value="10000">万</option>
+                <option value="100000000">亿</option>
+                <option value="1000000000000">兆</option>
+                <option value="10000000000000000">京</option>
+                <option value="100000000000000000000">垓</option>
+                <option value="100000000000000000000000">秭</option>
+                <option value="10000000000000000000000000000">穰</option>
+                <option value="100000000000000000000000000000000">沟</option>
+                <option value="1000000000000000000000000000000000000">涧</option>
+                <option value="10000000000000000000000000000000000000000">正</option>
+                <option value="100000000000000000000000000000000000000000000">载</option>
+                <option value="1000000000000000000000000000000000000000000000000">极</option>
+                <option value="10000000000000000000000000000000000000000000000000000">恒河沙</option>
+                <option value="100000000000000000000000000000000000000000000000000000000">阿僧祇</option>
+                <option value="1000000000000000000000000000000000000000000000000000000000000">那由他</option>
+                <option value="10000000000000000000000000000000000000000000000000000000000000000">不可思议</option>
+                <option value="100000000000000000000000000000000000000000000000000000000000000000000000000">无量</option>
+                <option value="1000000000000000000000000000000000000000000000000000000000000000000000000">大数</option>
+                <option value="10000000000000000000000000000000000000000000000000000000000000000000000000000">无敌</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
-        // 获取DOM元素
-        const statusEl = document.getElementById('status');
-        const visitCountEl = document.getElementById('visit-count');
-        const likeCountEl = document.getElementById('like-count');
-        const likeBtn = document.getElementById('like-btn');
-        const barrageInput = document.getElementById('barrage-input');
-        const barrageColor = document.getElementById('barrage-color');
-        const barrageSendBtn = document.getElementById('barrage-send-btn');
-        const barrageContainer = document.getElementById('barrage-container');
+        <div class="bonus-container">
+          <div class="bonus-box life-bonus">
+            <div class="bonus-title">生命</div>
+            <div class="bonus-input-group">
+              <label class="bonus-label">加成：</label>
+              <input type="number" id="reverse-life-bonus" step="0.01" placeholder="输入百分比" class="bonus-input">
+            </div>
+            <div class="bonus-input-group">
+              <label class="bonus-label">提升：</label>
+              <input type="number" id="reverse-life-boost" step="0.01" placeholder="输入百分比" class="bonus-input" oninput="syncBoostValues('base', 'life', this.value)">
+            </div>
+            <div class="bonus-input-group">
+              <label class="bonus-label">增幅：</label>
+              <input type="number" id="reverse-life-amplify" step="0.01" placeholder="输入百分比" class="bonus-input">
+            </div>
+          </div>
+          
+          <div class="bonus-box attack-bonus">
+            <div class="bonus-title">攻击</div>
+            <div class="bonus-input-group">
+              <label class="bonus-label">加成：</label>
+              <input type="number" id="reverse-attack-bonus" step="0.01" placeholder="输入百分比" class="bonus-input">
+            </div>
+            <div class="bonus-input-group">
+              <label class="bonus-label">提升：</label>
+              <input type="number" id="reverse-attack-boost" step="0.01" placeholder="输入百分比" class="bonus-input" oninput="syncBoostValues('base', 'attack', this.value)">
+            </div>
+            <div class="bonus-input-group">
+              <label class="bonus-label">增幅：</label>
+              <input type="number" id="reverse-attack-amplify" step="0.01" placeholder="输入百分比" class="bonus-input">
+            </div>
+          </div>
+        </div>
+        <div class="bonus-hint">不填默认为0</div>
 
-        // WebSocket连接状态更新
-        socket.onopen = function(event) {
-            statusEl.textContent = "已连接到服务器";
-            statusEl.style.color = "green";
-        };
+        <button onclick="reverseCalculate()">反推基础属性</button>
+      </div>
 
-        socket.onclose = function(event) {
-            statusEl.textContent = "连接已断开，尝试重新连接...";
-            statusEl.style.color = "red";
-            // 5秒后尝试重新连接
+      <!-- 吃丹计算 -->
+      <div id="dan-tab" class="tab-content">
+        <!-- 修改后的吃丹计算器样式 -->
+        <div class="dan-input-group">
+          <input type="number" id="dan-base-life" step="0.01" placeholder="丹加的生命" class="life-input">
+          <input type="number" id="dan-base-attack" step="0.01" placeholder="丹加的攻击" class="attack-input">
+          <select id="dan-base-unit">
+            <option value="1" selected>个</option>
+            <option value="10000">万</option>
+            <option value="100000000">亿</option>
+            <option value="1000000000000">兆</option>
+            <option value="10000000000000000">京</option>
+            <option value="100000000000000000000">垓</option>
+            <option value="1000000000000000000000000">秭</option>
+            <option value="10000000000000000000000000000">穰</option>
+            <option value="100000000000000000000000000000000">沟</option>
+            <option value="1000000000000000000000000000000000000">涧</option>
+            <option value="10000000000000000000000000000000000000000">正</option>
+            <option value="100000000000000000000000000000000000000000000">载</option>
+            <option value="1000000000000000000000000000000000000000000000000">极</option>
+            <option value="10000000000000000000000000000000000000000000000000000">恒河沙</option>
+            <option value="100000000000000000000000000000000000000000000000000000000">阿僧祇</option>
+            <option value="1000000000000000000000000000000000000000000000000000000000000">那由他</option>
+            <option value="10000000000000000000000000000000000000000000000000000000000000000">不可思议</option>
+            <option value="100000000000000000000000000000000000000000000000000000000000000000000">无量</option>
+            <option value="1000000000000000000000000000000000000000000000000000000000000000000">大数</option>
+            <option value="10000000000000000000000000000000000000000000000000000000000000000000000000000">无敌</option>
+          </select>
+        </div>
+        
+        <div class="dan-quantity-container">
+          <input type="number" id="dan-quantity" step="1" min="1" placeholder="输入要吃的丹数量">
+        </div>
+        
+        <div class="bonus-container">
+          <div class="bonus-box life-bonus">
+            <div class="bonus-title">生命</div>
+            <div class="bonus-input-group">
+              <label class="bonus-label">加成：</label>
+              <input type="number" id="dan-life-bonus" step="0.01" placeholder="输入百分比" class="bonus-input">
+            </div>
+            <div class="bonus-input-group">
+              <label class="bonus-label">提升：</label>
+              <input type="number" id="dan-life-boost" step="0.01" placeholder="输入百分比" class="bonus-input" oninput="syncDanBoostValues('life', this.value)">
+            </div>
+            <div class="bonus-input-group">
+              <label class="bonus-label">增幅：</label>
+              <input type="number" id="dan-life-amplify" step="0.01" placeholder="输入百分比" class="bonus-input">
+            </div>
+          </div>
+          
+          <div class="bonus-box attack-bonus">
+            <div class="bonus-title">攻击</div>
+            <div class="bonus-input-group">
+              <label class="bonus-label">加成：</label>
+              <input type="number" id="dan-attack-bonus" step="0.01" placeholder="输入百分比" class="bonus-input">
+            </div>
+            <div class="bonus-input-group">
+              <label class="bonus-label">提升：</label>
+              <input type="number" id="dan-attack-boost" step="0.01" placeholder="输入百分比" class="bonus-input" oninput="syncDanBoostValues('attack', this.value)">
+            </div>
+            <div class="bonus-input-group">
+              <label class="bonus-label">增幅：</label>
+              <input type="number" id="dan-attack-amplify" step="0.01" placeholder="输入百分比" class="bonus-input">
+            </div>
+          </div>
+        </div>
+        
+        <div class="dan-bonus-container">
+          <div class="dan-bonus-title">吃丹收益：</div>
+          <div class="dan-bonus-input">
+            <input type="number" id="dan-bonus" step="0.01" placeholder="输入百分比">
+          </div>
+        </div>
+        
+        <div class="dan-hint">不填默认为0</div>
+        
+        <div class="reverse-power-container">
+          <div class="reverse-title">丹药反推：</div>
+          <div class="reverse-input-group">
+            <input type="number" id="target-power-dan" step="0.01" placeholder="输入想加多少战力">
+            <select id="target-power-unit-dan">
+              <option value="1" selected>个</option>
+              <option value="10000">万</option>
+              <option value="100000000">亿</option>
+              <option value="1000000000000">兆</option>
+              <option value="10000000000000000">京</option>
+              <option value="100000000000000000000">垓</option>
+               <option value="1000000000000000000000000">秭</option>
+              <option value="10000000000000000000000000000">穰</option>
+              <option value="100000000000000000000000000000000">沟</option>
+              <option value="1000000000000000000000000000000000000">涧</option>
+              <option value="10000000000000000000000000000000000000000">正</option>
+              <option value="100000000000000000000000000000000000000000000">载</option>
+              <option value="1000000000000000000000000000000000000000000000000"></option>
+              <option value="10000000000000000000000000000000000000000000000000000">恒河沙</option>
+              <option value="100000000000000000000000000000000000000000000000000000000">阿僧祇</option>
+              <option value="1000000000000000000000000000000000000000000000000000000000000">那由他</option>
+              <option value="10000000000000000000000000000000000000000000000000000000000000000">不可思议</option>
+              <option value="100000000000000000000000000000000000000000000000000000000000000000000">无量</option>
+              <option value="1000000000000000000000000000000000000000000000000000000000000000000000000">大数</option>
+              <option value="10000000000000000000000000000000000000000000000000000000000000000000000000000000">无敌</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="button-container">
+          <button onclick="calculateDan()">计算吃丹效果</button>
+          <button class="reverse-button" onclick="reverseCalculateDan()">反推丹药数量</button>
+        </div>
+      </div>
+
+      <!-- 泡澡计算 -->
+      <div id="bath-tab" class="tab-content">
+        <!-- 初始战力和目标战力 - 背景灰色，输入框减少30% -->
+        <div class="bath-power-group">
+          <div class="input-group">
+            <div class="input-row">
+              <label>初始战力：</label>
+              <input type="number" id="initial-power-bath" step="0.01" placeholder="输入数值">
+              <select id="initial-power-unit-bath">
+                <option value="1" selected>个</option>
+                <option value="10000">万</option>
+                <option value="100000000">亿</option>
+                <option value="1000000000000">兆</option>
+                <option value="10000000000000000">京</option>
+                <option value="100000000000000000000">垓</option>
+                <option value="1000000000000000000000000">秭</option>
+                <option value="10000000000000000000000000000">穰</option>
+                <option value="100000000000000000000000000000000">沟</option>
+                <option value="1000000000000000000000000000000000000">涧</option>
+                <option value="10000000000000000000000000000000000000000">正</option>
+                <option value="100000000000000000000000000000000000000000000">载</option>
+                <option value="1000000000000000000000000000000000000000000000000">极</option>
+                <option value="10000000000000000000000000000000000000000000000000000">恒河沙</option>
+                <option value="100000000000000000000000000000000000000000000000000000000">阿僧祇</option>
+                <option value="1000000000000000000000000000000000000000000000000000000000000">那由他</option>
+                <option value="10000000000000000000000000000000000000000000000000000000000000000">不可思议</option>
+                <option value="100000000000000000000000000000000000000000000000000000000000000000000">无量</option>
+                <option value="1000000000000000000000000000000000000000000000000000000000000000000000000">大数</option>
+                <option value="10000000000000000000000000000000000000000000000000000000000000000000000000000">无敌</option>
+              </select>
+            </div>
+            <div class="input-row">
+              <label>目标战力：</label>
+              <input type="number" id="target-power-bath" step="0.01" placeholder="输入数值">
+              <select id="target-power-unit-bath">
+                <option value="1" selected>个</option>
+                <option value="10000">万</option>
+                <option value="100000000">亿</option>
+                <option value="1000000000000">兆</option>
+                <option value="10000000000000000">京</option>
+                <option value="100000000000000000000">垓</option>
+                <option value="1000000000000000000000000">秭</option>
+                
+                <option value="10000000000000000000000000000">穰</option>
+                <option value="100000000000000000000000000000000">沟</option>
+                <option value="1000000000000000000000000000000000000">涧</option>
+                <option value="10000000000000000000000000000000000000000">正</option>
+                <option value="100000000000000000000000000000000000000000000">载</option>
+                <option value="100000000000000000000000000000000000000000000000">极</option>
+                <option value="10000000000000000000000000000000000000000000000000000">恒河沙</option>
+                <option value="100000000000000000000000000000000000000000000000000000000">阿僧祇</option>
+                <option value="1000000000000000000000000000000000000000000000000000000000000">那由他</option>
+                <option value="1000000000000000000000000000000000000000000000000000000000000000">不可思议</option>
+                <option value="100000000000000000000000000000000000000000000000000000000000000000000">无量</option>
+                <option value="1000000000000000000000000000000000000000000000000000000000000000000000000">大数</option>
+                <option value="10000000000000000000000000000000000000000000000000000000000000000000000000000">无敌</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 每五秒 - 背景灰色，输入框减少30% -->
+        <div class="growth-rate-group">
+          <div class="input-group">
+            <div class="input-row">
+              <label>每次增加：</label>
+              <input type="number" id="growth-rate" min="0.01" max="0.02" step="0.001" value="0.01" placeholder="输入百分比">
+              <span class="hint">(0.01%-0.02%)</span>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="calculateBath()">计算泡澡需求</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 战力计算结果 -->
+  <div class="result-section hidden" id="power-result-section">
+    <h2>战力结果</h2>
+    <div class="result-row">
+      <span class="result-label">最终生命：</span>
+      <span id="final-life" class="result-value">0 个</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">最终攻击：</span>
+      <span id="final-attack" class="result-value">0 个</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">总战力：</span>
+      <span id="total-power" class="result-value">0 个</span>
+    </div>
+  </div>
+
+  <!-- 基础反推结果 -->
+  <div class="result-section hidden" id="base-result-section">
+    <h2>反推结果</h2>
+    <div class="result-row">
+      <span class="result-label">基础生命：</span>
+      <span id="reverse-base-life" class="result-value">0 个</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">基础攻击：</span>
+      <span id="reverse-base-attack" class="result-value">0 个</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">验证战力：</span>
+      <span id="reverse-verify-power" class="result-value">0 个</span>
+    </div>
+  </div>
+
+  <!-- 吃丹计算结果 -->
+  <div class="result-section hidden" id="dan-result-section">
+    <h2>吃丹结果</h2>
+    <div class="result-row">
+      <span class="result-label">基础生命增加：</span>
+      <span id="enhanced-life" class="result-value">0 个</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">基础攻击增加：</span>
+      <span id="enhanced-attack" class="result-value">0 个</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">生命战力增加：</span>
+      <span id="dan-final-life" class="result-value">0 个</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">攻击战力增加：</span>
+          <span id="dan-final-attack" class="result-value">0 个</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">总战力增加：</span>
+      <span id="dan-total-power" class="result-value">0 个</span>
+    </div>
+  </div>
+
+  <!-- 吃丹反推结果 -->
+  <div class="result-section hidden" id="dan-reverse-result-section">
+    <h2>反推结果</h2>
+    <div class="result-row">
+      <span class="result-label">所需丹药数量：</span>
+      <span id="required-dan-count" class="result-value">0 颗</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">验证战力：</span>
+      <span id="verify-power" class="result-value">0 个</span>
+    </div>
+  </div>
+
+  <!-- 泡澡计算结果 -->
+  <div class="result-section hidden" id="bath-result-section">
+    <h2>泡澡结果</h2>
+    <div class="result-row">
+      <span class="result-label">所需时间：</span>
+      <span id="bath-time-result" class="result-value">0 秒</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">预计时间：</span>
+      <span id="bath-estimate-time" class="result-value">2023/01/01 00:00</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">需要魔丹：</span>
+      <span id="bath-dan-count" class="dan-value">0 颗</span>
+    </div>
+  </div>
+
+  <!-- 扫雷游戏图标 -->
+  <div class="mine-icon" onclick="openMineGame()">💣</div>
+
+  <!-- 扫雷游戏界面 -->
+  <div id="mine-game" class="mine-game">
+    <h1 class="mine-title">扫雷游戏</h1>
+    
+    <div class="difficulty-selector">
+      <button class="difficulty-btn" onclick="startGame(8, 8, 10)">简单模式</button>
+      <button class="difficulty-btn" onclick="startGame(12, 12, 20)">中等模式</button>
+      <button class="difficulty-btn" onclick="startGame(16, 16, 40)">困难模式</button>
+    </div>
+    
+    <div id="game-info-container" class="game-info-container hidden">
+      <div class="game-info">
+        <div class="mine-time-row">
+          <div id="mine-count">剩余炸弹: 0</div>
+          <div id="game-time">时间: 00:00:00</div>
+        </div>
+        <div class="flag-mode-row">
+          <button id="flag-mode-btn" class="flag-mode-btn" onclick="toggleFlagMode()">插旗模式(关)</button>
+        </div>
+      </div>
+      
+      <div id="mine-board" class="mine-board"></div>
+      
+      <div class="game-controls">
+        <button class="control-btn" onclick="restartGame()">重新开始</button>
+        <button class="control-btn exit-btn" onclick="exitGame()">退出游戏</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+// 增强版自动滚动函数
+function scrollToResult() {
+    // 稍微延迟一下，确保结果面板已经显示
+    setTimeout(() => {
+        const resultSections = document.querySelectorAll('.result-section:not(.hidden)');
+        if (resultSections.length > 0) {
+            const resultSection = resultSections[0];
+            
+            // 计算需要滚动的位置（结果面板顶部往上50像素，让内容更可见）
+            const elementPosition = resultSection.getBoundingClientRect().top + window.pageYOffset;
+            const offsetPosition = elementPosition - 100;
+            
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
+            
+            // 添加高亮效果
+            resultSection.style.transition = 'all 0.5s ease';
+            resultSection.style.transform = 'translateY(-5px)';
+            resultSection.style.boxShadow = '0 10px 30px rgba(74, 111, 165, 0.3)';
+            
             setTimeout(() => {
-                window.location.reload();
-            }, 5000);
-        };
-
-        // 接收服务器消息
-        socket.onmessage = function(event) {
-            const message = JSON.parse(event.data);
-            console.log('收到服务器消息:', message);
-
-            switch (message.type) {
-                case 'init':
-                    // 初始化数据
-                    visitCountEl.textContent = message.data.visitCount;
-                    likeCountEl.textContent = message.data.likeCount;
-                    break;
-                case 'like_update':
-                    // 更新点赞数
-                    likeCountEl.textContent = message.data;
-                    break;
-                case 'new_barrage':
-                    // 显示新弹幕
-                    displayBarrage(message.data);
-                    break;
-                case 'error':
-                    alert(message.message);
-                    break;
-            }
-        };
-
-        // 点赞按钮点击事件
-        likeBtn.onclick = function() {
-            socket.send(JSON.stringify({
-                type: 'user_like'
-            }));
-            // 禁用按钮，防止重复点击
-            likeBtn.disabled = true;
-            likeBtn.textContent = '已点赞';
-        };
-
-        // 发送弹幕按钮点击事件
-        barrageSendBtn.onclick = function() {
-            sendBarrage();
-        };
-        // 按回车发送弹幕
-        barrageInput.onkeypress = function(e) {
-            if (e.key === 'Enter') {
-                sendBarrage();
-            }
-        };
-
-        function sendBarrage() {
-            const text = barrageInput.value.trim();
-            const color = barrageColor.value;
-            if (text) {
-                socket.send(JSON.stringify({
-                    type: 'send_barrage',
-                    data: {
-                        text: text,
-                        color: color
-                    }
-                }));
-                barrageInput.value = ''; // 清空输入框
-            }
+                resultSection.style.transform = 'translateY(0)';
+                resultSection.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)';
+            }, 800);
         }
+    }, 100);
+}
 
-        function displayBarrage(barrageData) {
-            const barrageEl = document.createElement('div');
-            barrageEl.className = 'barrage-item';
-            barrageEl.textContent = barrageData.text;
-            barrageEl.style.color = barrageData.color;
-            barrageEl.style.top = Math.random() * 250 + 'px'; // 随机高度
-
-            barrageContainer.appendChild(barrageEl);
-
-            // 弹幕动画结束后移除元素
-            setTimeout(() => {
-                barrageEl.remove();
-            }, 10000);
+  
+    // ===== 完整音乐播放器 =====
+    const musicPlayer = (function() {
+        // 音乐库
+        const songs = [
+            { name: "unravel   错的不是我而是这个世界😈😈", url: "https://music.163.com/song/media/outer/url?id=1452131330.mp3" },
+            { name: "call of silence 为了大海塔塔开🤓🤓 ", url: "https://music.163.com/song/media/outer/url?id=2126022114.mp3" },
+            { name: "青鸟  砂世嘎👇👆👆👈👈   那鲁多✌✌️🖖🖖🖖👈👈🤘🤘", url: "https://music.163.com/song/media/outer/url?id=27969765.mp3" }
+        ];
+        
+        // 播放状态
+        let currentAudio = null;
+        let isPlaying = false;
+        let currentSong = null;
+        let retryCount = 0;
+        const playHistory = [];
+        const maxHistory = 3;
+        
+        // 创建音乐信息元素
+        const musicInfoEl = document.createElement('div');
+        musicInfoEl.id = 'music-info';
+        document.body.appendChild(musicInfoEl);
+        
+        // 获取随机歌曲（排除当前播放）
+        function getRandomSong(excludeUrl = null) {
+            const availableSongs = songs.filter(song => !excludeUrl || song.url !== excludeUrl);
+            return availableSongs.length > 0 ? 
+                availableSongs[Math.floor(Math.random() * availableSongs.length)] : 
+                songs[0];
         }
-
-        socket.onerror = function(error) {
-            console.error('WebSocket错误:', error);
-            statusEl.textContent = "连接错误: " + error.message;
-            statusEl.style.color = "red";
+        
+        // 精确计算文本宽度
+        function getTextWidth(text) {
+            const span = document.createElement('span');
+            span.style.font = '14px "Microsoft YaHei", Arial, sans-serif';
+            span.style.position = 'absolute';
+            span.style.left = '-9999px';
+            span.style.whiteSpace = 'nowrap';
+            span.textContent = text;
+            document.body.appendChild(span);
+            const width = span.offsetWidth;
+            document.body.removeChild(span);
+            return width;
+        }
+        
+        // 显示音乐信息（带精确滚动控制）
+        function showMusicInfo(text, isError = false) {
+            // 重置状态
+            musicInfoEl.style.display = 'block';
+            musicInfoEl.textContent = text;
+            musicInfoEl.style.width = 'auto';
+            musicInfoEl.style.maxWidth = 'none';
+            
+            // 计算文字和屏幕宽度
+            const textWidth = getTextWidth(text);
+            const screenWidth = window.innerWidth;
+            
+            // 动态调整速度（保证阅读体验）
+            const baseSpeed = 100; // 像素/秒
+            const totalDistance = textWidth + screenWidth;
+            const duration = Math.max(8, totalDistance / baseSpeed); // 最少8秒
+            
+            // 设置动画
+            musicInfoEl.style.animation = `${isError ? 'errorScroll' : 'songScroll'} ${duration}s linear ${isError ? 1 : 3}`;
+            
+            // 动画结束处理
+            const onAnimationEnd = () => {
+                // 无论是错误信息还是歌词，动画结束后都隐藏
+                musicInfoEl.style.display = 'none';
+                musicInfoEl.style.animation = 'none';
+            };
+            
+            musicInfoEl.addEventListener('animationend', onAnimationEnd, { once: true });
+        }
+        
+        // 播放音乐核心逻辑
+        function play(song = null) {
+            if (isPlaying) return;
+            
+            const playSong = song || getRandomSong(currentSong?.url);
+            if (!playSong) return;
+            
+            currentSong = playSong;
+            updateHistory(playSong);
+            
+            currentAudio = new Audio(playSong.url);
+            currentAudio.volume = 0.5;
+            
+            currentAudio.oncanplay = () => {
+                currentAudio.play()
+                    .then(() => {
+                        isPlaying = true;
+                        retryCount = 0;
+                        showMusicInfo(playSong.name);
+                    })
+                    .catch(err => {
+                        console.error('播放失败:', err);
+                        showMusicInfo('播放失败', true);
+                        if (retryCount < 1) {
+                            retryCount++;
+                            setTimeout(() => play(playSong), 500);
+                        }
+                    });
+            };
+            
+            currentAudio.onerror = () => {
+                showMusicInfo('加载失败', true);
+                if (retryCount < 1) {
+                    retryCount++;
+                    setTimeout(() => play(playSong), 500);
+                }
+            };
+            
+            currentAudio.onended = () => {
+                resetPlayer();
+                setTimeout(() => play(getRandomSong(currentSong.url)), 1000);
+            };
+        }
+        
+        // 重置播放器
+        function resetPlayer() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            isPlaying = false;
+            musicInfoEl.style.display = 'none';
+            musicInfoEl.style.animation = 'none';
+        }
+        
+        // 更新播放历史
+        function updateHistory(song) {
+            playHistory.unshift(song);
+            if (playHistory.length > maxHistory) playHistory.pop();
+        }
+        
+        return {
+            trigger: function() {
+                if (!isPlaying) play();
+            },
+            getCurrentSong: function() {
+                return currentSong;
+            },
+            getHistory: function() {
+                return [...playHistory];
+            }
         };
-    </script>
+    })();
+
+    // ===== 交互触发设置 =====
+    function setupMusicTriggers() {
+        // 点击事件
+        document.addEventListener('click', () => musicPlayer.trigger());
+        
+        // 触摸滑动
+        let touchStartX = 0;
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+        });
+        document.addEventListener('touchend', (e) => {
+            if (Math.abs(e.changedTouches[0].clientX - touchStartX) > 30) {
+                musicPlayer.trigger();
+            }
+        });
+        
+        // 键盘事件
+        document.addEventListener('keydown', () => musicPlayer.trigger());
+        
+        // 输入变化
+        document.querySelectorAll('input, select, textarea').forEach(el => {
+            el.addEventListener('input', () => musicPlayer.trigger());
+        });
+        
+        // 初始随机播放
+        setTimeout(() => musicPlayer.trigger(), 1500);
+    }
+
+    // 页面加载初始化
+    document.addEventListener('DOMContentLoaded', setupMusicTriggers);
+
+    // 标签页切换变量
+    let currentTabIndex = 0;
+    const tabOrder = ['power', 'base', 'dan', 'bath'];
+
+    // 触摸滑动相关变量
+    let startX = 0;
+    let currentX = 0;
+    let isSwiping = false;
+    const swipeThreshold = 80;
+
+    // 初始化触摸事件
+    function initSwipe() {
+      const container = document.getElementById('content-container');
+      
+      container.addEventListener('touchstart', function(e) {
+        startX = e.touches[0].clientX;
+        currentX = startX;
+        isSwiping = true;
+      });
+      
+      container.addEventListener('touchmove', function(e) {
+        if (!isSwiping) return;
+        currentX = e.touches[0].clientX;
+        
+        if (Math.abs(currentX - startX) > 10) {
+          e.preventDefault();
+        }
+      });
+      
+      container.addEventListener('touchend', function(e) {
+        if (!isSwiping) return;
+        
+        const deltaX = currentX - startX;
+        
+        if (Math.abs(deltaX) > swipeThreshold) {
+          if (deltaX > 0) {
+            switchTabBySwipe(-1);
+          } else {
+            switchTabBySwipe(1);
+          }
+        }
+        
+        isSwiping = false;
+        startX = 0;
+        currentX = 0;
+      });
+    }
+
+
+// 显示自定义提示框
+function showCustomAlert(message, duration = 3000) {
+    const alertBox = document.getElementById('customAlert');
+    const overlay = document.getElementById('overlay');
+    const messageElement = document.getElementById('alertMessage');
+    
+    messageElement.innerHTML = message;
+    alertBox.classList.add('show');
+    overlay.style.display = 'block';
+    <!--  -->
+    <!-- // 自动关闭 -->
+    <!-- if (duration > 0) { -->
+        <!-- setTimeout(() => { -->
+            <!-- hideCustomAlert(); -->
+        <!-- }, duration); -->
+    <!-- } -->
+}
+
+// 隐藏自定义提示框
+function hideCustomAlert() {
+    const alertBox = document.getElementById('customAlert');
+    const overlay = document.getElementById('overlay');
+    
+    alertBox.classList.remove('show');
+    overlay.style.display = 'none';
+}
+
+<!-- // 点击遮罩层关闭 -->
+<!-- document.getElementById('overlay').addEventListener('click', hideCustomAlert); -->
+
+
+
+    // 通过滑动切换标签页
+    function switchTabBySwipe(direction) {
+      let newTabIndex = currentTabIndex + direction;
+      
+      if (newTabIndex < 0) {
+        newTabIndex = tabOrder.length - 1;
+      } else if (newTabIndex >= tabOrder.length) {
+        newTabIndex = 0;
+      }
+      
+      if (newTabIndex !== currentTabIndex) {
+        switchTab(tabOrder[newTabIndex], newTabIndex);
+      }
+    }
+
+    // 标签页切换函数
+    function switchTab(tabName, tabIndex) {
+      const tabs = document.querySelectorAll('.tab');
+      const contents = document.querySelectorAll('.tab-content');
+      const oldTabIndex = currentTabIndex;
+      currentTabIndex = tabIndex;
+
+      tabs.forEach(tab => tab.classList.remove('active'));
+      tabs[tabIndex].classList.add('active');
+
+      contents.forEach(content => {
+        if (content.classList.contains('active')) {
+          if (tabIndex > oldTabIndex) {
+            content.classList.add('slide-left');
+          } else {
+            content.classList.add('slide-right');
+          }
+          content.classList.remove('active');
+        }
+      });
+
+      setTimeout(() => {
+        contents.forEach(content => {
+          content.classList.remove('slide-left', 'slide-right');
+          if (content.id === tabName + '-tab') {
+            content.classList.add('active');
+          }
+        });
+        
+        // 隐藏所有结果区域
+        document.querySelectorAll('.result-section').forEach(section => {
+          section.classList.add('hidden');
+        });
+      }, 50);
+    }
+
+    // 单位格式化函数
+    function formatNumberWithUnit(num) {
+      const units = [
+        { name: "个", value: 1 },
+        { name: "万", value: 10000 },
+        { name: "亿", value: 100000000 },
+        { name: "兆", value: 1000000000000 },
+        { name: "京", value: 10000000000000000 },
+        { name: "垓", value: 100000000000000000000 },
+        { name: "秭", value: 1000000000000000000000000 },
+        { name: "穰", value: 10000000000000000000000000000 },
+        { name: "沟", value: 100000000000000000000000000000000 },
+        { name: "涧", value: 1000000000000000000000000000000000000 },
+        { name: "正", value: 10000000000000000000000000000000000000000 },
+        { name: "载", value: 100000000000000000000000000000000000000000000 },
+        { name: "极", value: 1000000000000000000000000000000000000000000000000 },
+        { name: "恒河沙", value: 10000000000000000000000000000000000000000000000000000 },
+        { name: "阿僧祇", value: 100000000000000000000000000000000000000000000000000000000 },
+        { name: "那由他", value: 1000000000000000000000000000000000000000000000000000000000000 },
+        { name: "不可思议", value: 10000000000000000000000000000000000000000000000000000000000000000 },
+        { name: "无量", value: 100000000000000000000000000000000000000000000000000000000000000000000 },
+        { name: "大数", value: 1000000000000000000000000000000000000000000000000000000000000000000000000 },
+        { name: "无敌", value: 10000000000000000000000000000000000000000000000000000000000000000000000000000 }
+      ];
+      
+      if (num === 0) return "0 个";
+      
+      for (let i = units.length - 1; i >= 0; i--) {
+        if (num >= units[i].value) {
+          return (num / units[i].value).toFixed(2) + " " + units[i].name;
+        }
+      }
+      return num.toFixed(2) + " 个";
+    }
+
+    // 战力计算函数
+    function calculatePower() {
+      const baseLife = parseFloat(document.getElementById('base-life').value) || 0;
+      const baseLifeUnit = parseFloat(document.getElementById('base-life-unit').value) || 1;
+      const baseAttack = parseFloat(document.getElementById('base-attack').value) || 0;
+      const baseAttackUnit = parseFloat(document.getElementById('base-attack-unit').value) || 1;
+      
+      const lifeBonus = parseFloat(document.getElementById('life-bonus').value) || 0;
+      const lifeBoost = parseFloat(document.getElementById('life-boost').value) || 0;
+      const lifeAmplify = parseFloat(document.getElementById('life-amplify').value) || 0;
+      
+      const attackBonus = parseFloat(document.getElementById('attack-bonus').value) || 0;
+      const attackBoost = parseFloat(document.getElementById('attack-boost').value) || 0;
+      const attackAmplify = parseFloat(document.getElementById('attack-amplify').value) || 0;
+      
+      const lifeMultiplier = (1 + lifeBonus/100) * (1 + lifeBoost/100) * (1 + lifeAmplify/100);
+      const attackMultiplier = (1 + attackBonus/100) * (1 + attackBoost/100) * (1 + attackAmplify/100);
+      
+      const finalLife = baseLife * baseLifeUnit * lifeMultiplier;
+      const finalAttack = baseAttack * baseAttackUnit * attackMultiplier;
+      const totalPower = finalLife + 5 * finalAttack;
+      
+      document.getElementById('final-life').textContent = formatNumberWithUnit(finalLife);
+      document.getElementById('final-attack').textContent = formatNumberWithUnit(finalAttack);
+      document.getElementById('total-power').textContent = formatNumberWithUnit(totalPower);
+      
+      document.getElementById('power-result-section').classList.remove('hidden');
+      document.getElementById('base-result-section').classList.add('hidden');
+      document.getElementById('bath-result-section').classList.add('hidden');
+      document.getElementById('dan-result-section').classList.add('hidden');
+      document.getElementById('dan-reverse-result-section').classList.add('hidden');
+      
+      // 🎯 新增：自动滚动到结果
+    scrollToResult();
+    }
+
+    // 基础反推函数
+    function reverseCalculate() {
+      const targetPower = parseFloat(document.getElementById('target-power').value) || 0;
+      const powerUnit = parseFloat(document.getElementById('power-unit').value) || 1;
+      const totalPower = targetPower * powerUnit;
+      
+      const lifeBonus = parseFloat(document.getElementById('reverse-life-bonus').value) || 0;
+      const lifeBoost = parseFloat(document.getElementById('reverse-life-boost').value) || 0;
+      const lifeAmplify = parseFloat(document.getElementById('reverse-life-amplify').value) || 0;
+      
+      const attackBonus = parseFloat(document.getElementById('reverse-attack-bonus').value) || 0;
+      const attackBoost = parseFloat(document.getElementById('reverse-attack-boost').value) || 0;
+      const attackAmplify = parseFloat(document.getElementById('reverse-attack-amplify').value) || 0;
+      
+      const lifeMultiplier = (1 + lifeBonus/100) * (1 + lifeBoost/100) * (1 + lifeAmplify/100);
+      const attackMultiplier = (1 + attackBonus/100) * (1 + attackBoost/100) * (1 + attackAmplify/100);
+      
+      const baseAttack = totalPower / (5 * (lifeMultiplier + attackMultiplier));
+      const baseLife = 5 * baseAttack;
+      
+      const verifyLife = baseLife * lifeMultiplier;
+      const verifyAttack = baseAttack * attackMultiplier;
+      const verifyPower = verifyLife + 5 * verifyAttack;
+      
+      document.getElementById('reverse-base-life').textContent = formatNumberWithUnit(baseLife);
+      document.getElementById('reverse-base-attack').textContent = formatNumberWithUnit(baseAttack);
+      document.getElementById('reverse-verify-power').textContent = formatNumberWithUnit(verifyPower);
+      
+      document.getElementById('base-result-section').classList.remove('hidden');
+      document.getElementById('power-result-section').classList.add('hidden');
+      document.getElementById('bath-result-section').classList.add('hidden');
+      document.getElementById('dan-result-section').classList.add('hidden');
+      document.getElementById('dan-reverse-result-section').classList.add('hidden');
+      // 🎯 新增：自动滚动到结果
+    scrollToResult();
+    }
+
+    // 泡澡计算函数
+    function calculateBath() {
+      const initialPower = parseFloat(document.getElementById('initial-power-bath').value) || 0;
+      const initialUnit = parseFloat(document.getElementById('initial-power-unit-bath').value) || 1;
+      const targetPower = parseFloat(document.getElementById('target-power-bath').value) || 0;
+      const targetUnit = parseFloat(document.getElementById('target-power-unit-bath').value) || 1;
+      const growthRate = parseFloat(document.getElementById('growth-rate').value) || 0.01;
+      
+      const initial = initialPower * initialUnit;
+      const target = targetPower * targetUnit;
+      
+      // 验证逻辑
+      if (initial <= 0) {
+        showCustomAlert("初始战力必须大于0");
+        return;
+      }
+      
+      if (target <= initial) {
+        showCustomAlert("目标战力必须大于初始战力");
+        return;
+      }
+      
+      const growthFactor = 1 + growthRate / 100;
+      let current = initial;
+      let timeCount = 0;
+      
+      while (current < target) {
+        current *= growthFactor;
+        timeCount++;
+      }
+      
+      const totalSeconds = timeCount * 5;
+      const days = Math.floor(totalSeconds / 86400);
+      const hours = Math.floor((totalSeconds % 86400) / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      
+      let timeString = "";
+      if (days > 0) timeString += `${days}天`;
+      if (hours > 0) timeString += `${hours}小时`;
+      if (minutes > 0) timeString += `${minutes}分钟`;
+      timeString += `${seconds}秒`;
+      
+      const now = new Date();
+      const completionDate = new Date(now.getTime() + totalSeconds * 1000);
+      const formattedDate = completionDate.getFullYear() + '/' + 
+                           String(completionDate.getMonth() + 1).padStart(2, '0') + '/' + 
+                           String(completionDate.getDate()).padStart(2, '0') + ' ' + 
+                           String(completionDate.getHours()).padStart(2, '0') + ':' + 
+                           String(completionDate.getMinutes()).padStart(2, '0');
+      
+      const danFactor = 1.0001;
+      current = initial;
+      let danCount = 0;
+      
+      while (current < target) {
+        current *= danFactor;
+        danCount++;
+      }
+      
+      document.getElementById('bath-time-result').textContent = timeString;
+      document.getElementById('bath-estimate-time').textContent = formattedDate;
+      document.getElementById('bath-dan-count').textContent = danCount.toLocaleString() + "颗";
+      
+      document.getElementById('bath-result-section').classList.remove('hidden');
+      document.getElementById('power-result-section').classList.add('hidden');
+      document.getElementById('base-result-section').classList.add('hidden');
+      document.getElementById('dan-result-section').classList.add('hidden');
+      document.getElementById('dan-reverse-result-section').classList.add('hidden');
+      // 🎯 新增：自动滚动到结果
+    scrollToResult();
+    }
+
+    // 提升数值同步函数
+    function syncBoostValues(tabType, inputType, value) {
+      if (value === '') {
+        if (tabType === 'power') {
+          if (inputType === 'life') {
+            document.getElementById('attack-boost').value = '';
+          } else if (inputType === 'attack') {
+            document.getElementById('life-boost').value = '';
+          }
+        } else if (tabType === 'base') {
+          if (inputType === 'life') {
+            document.getElementById('reverse-attack-boost').value = '';
+          } else if (inputType === 'attack') {
+            document.getElementById('reverse-life-boost').value = '';
+          }
+        }
+        return;
+      }
+      
+      const numericValue = parseFloat(value);
+      if (isNaN(numericValue)) return;
+      
+      if (tabType === 'power') {
+        if (inputType === 'life') {
+          document.getElementById('attack-boost').value = value;
+        } else if (inputType === 'attack') {
+          document.getElementById('life-boost').value = value;
+        }
+      } else if (tabType === 'base') {
+        if (inputType === 'life') {
+          document.getElementById('reverse-attack-boost').value = value;
+        } else if (inputType === 'attack') {
+          document.getElementById('reverse-life-boost').value = value;
+        }
+      }
+    }
+
+    // 吃丹计算器的同步函数
+    function syncDanBoostValues(inputType, value) {
+      if (value === '') {
+        if (inputType === 'life') {
+          document.getElementById('dan-attack-boost').value = '';
+        } else if (inputType === 'attack') {
+          document.getElementById('dan-life-boost').value = '';
+        }
+        return;
+      }
+      
+      const numericValue = parseFloat(value);
+      if (isNaN(numericValue)) return;
+      
+      if (inputType === 'life') {
+        document.getElementById('dan-attack-boost').value = value;
+      } else if (inputType === 'attack') {
+        document.getElementById('dan-life-boost').value = value;
+      }
+    }
+
+    // 格式化大数字函数
+    function formatLargeNumber(num) {
+      if (num <= 0) return "0 颗";
+      
+      // 十亿以下的数字显示完整数值
+      if (num < 1000000000) {
+        return num.toLocaleString() + " 颗";
+      } else {
+        // 十亿及以上的数字使用科学计数法
+        const exp = Math.floor(Math.log10(num));
+        const coefficient = num / Math.pow(10, exp);
+        return coefficient.toFixed(2) + " × 10^" + exp + " 颗";
+      }
+    }
+
+    // 吃丹计算函数
+    function calculateDan() {
+      // 获取基础属性
+      const baseLife = parseFloat(document.getElementById('dan-base-life').value) || 0;
+      const baseAttack = parseFloat(document.getElementById('dan-base-attack').value) || 0;
+      const baseUnit = parseFloat(document.getElementById('dan-base-unit').value) || 1;
+      
+      // 获取丹药数量
+      const danQuantity = parseFloat(document.getElementById('dan-quantity').value) || 0;
+      
+      // 获取吃丹加成
+      const danBonus = parseFloat(document.getElementById('dan-bonus').value) || 0;
+      
+      // 获取属性加成
+      const lifeBonus = parseFloat(document.getElementById('dan-life-bonus').value) || 0;
+      const lifeBoost = parseFloat(document.getElementById('dan-life-boost').value) || 0;
+      const lifeAmplify = parseFloat(document.getElementById('dan-life-amplify').value) || 0;
+      
+      const attackBonus = parseFloat(document.getElementById('dan-attack-bonus').value) || 0;
+      const attackBoost = parseFloat(document.getElementById('dan-attack-boost').value) || 0;
+      const attackAmplify = parseFloat(document.getElementById('dan-attack-amplify').value) || 0;
+      
+      // 计算单颗丹药效果
+      const danMultiplier = (1 + danBonus / 100);
+      const singleEnhancedLife = baseLife * baseUnit * danMultiplier;
+      const singleEnhancedAttack = baseAttack * baseUnit * danMultiplier;
+      
+      // 乘以丹药数量
+      const enhancedLife = singleEnhancedLife * danQuantity;
+      const enhancedAttack = singleEnhancedAttack * danQuantity;
+      
+           // 计算属性加成后的最终属性
+      const lifeMultiplier = (1 + lifeBonus/100) * (1 + lifeBoost/100) * (1 + lifeAmplify/100);
+      const attackMultiplier = (1 + attackBonus/100) * (1 + attackBoost/100) * (1 + attackAmplify/100);
+      
+      const finalLife = enhancedLife * lifeMultiplier;
+      const finalAttack = enhancedAttack * attackMultiplier;
+      
+      // 计算总战力
+      const totalPower = finalLife + 5 * finalAttack;
+      
+      // 显示结果
+      document.getElementById('enhanced-life').textContent = formatNumberWithUnit(enhancedLife);
+      document.getElementById('enhanced-attack').textContent = formatNumberWithUnit(enhancedAttack);
+      document.getElementById('dan-final-life').textContent = formatNumberWithUnit(finalLife);
+      document.getElementById('dan-final-attack').textContent = formatNumberWithUnit(finalAttack);
+      document.getElementById('dan-total-power').textContent = formatNumberWithUnit(totalPower);
+      
+      document.getElementById('dan-result-section').classList.remove('hidden');
+      document.getElementById('power-result-section').classList.add('hidden');
+      document.getElementById('base-result-section').classList.add('hidden');
+      document.getElementById('bath-result-section').classList.add('hidden');
+      document.getElementById('dan-reverse-result-section').classList.add('hidden');
+      
+      // 🎯 新增：自动滚动到结果
+    scrollToResult();
+    }
+
+    // 反推丹药数量函数
+    function reverseCalculateDan() {
+      // 获取基础属性
+      const baseLife = parseFloat(document.getElementById('dan-base-life').value) || 0;
+      const baseAttack = parseFloat(document.getElementById('dan-base-attack').value) || 0;
+      const baseUnit = parseFloat(document.getElementById('dan-base-unit').value) || 1;
+      
+      // 获取目标战力
+      const targetPower = parseFloat(document.getElementById('target-power-dan').value) || 0;
+      const targetPowerUnit = parseFloat(document.getElementById('target-power-unit-dan').value) || 1;
+      const totalTargetPower = targetPower * targetPowerUnit;
+      
+      // 获取吃丹加成
+      const danBonus = parseFloat(document.getElementById('dan-bonus').value) || 0;
+      
+      // 获取属性加成
+      const lifeBonus = parseFloat(document.getElementById('dan-life-bonus').value) || 0;
+      const lifeBoost = parseFloat(document.getElementById('dan-life-boost').value) || 0;
+      const lifeAmplify = parseFloat(document.getElementById('dan-life-amplify').value) || 0;
+      
+      const attackBonus = parseFloat(document.getElementById('dan-attack-bonus').value) || 0;
+      const attackBoost = parseFloat(document.getElementById('dan-attack-boost').value) || 0;
+      const attackAmplify = parseFloat(document.getElementById('dan-attack-amplify').value) || 0;
+      
+      // 计算加成系数
+      const lifeMultiplier = (1 + lifeBonus/100) * (1 + lifeBoost/100) * (1 + lifeAmplify/100);
+      const attackMultiplier = (1 + attackBonus/100) * (1 + attackBoost/100) * (1 + attackAmplify/100);
+      
+      // 计算单颗丹药效果
+      const danMultiplier = (1 + danBonus / 100);
+      const singleDanLife = baseLife * baseUnit * danMultiplier;
+      const singleDanAttack = baseAttack * baseUnit * danMultiplier;
+      
+      // 计算单颗丹药的总战力贡献
+      const singleDanLifePower = singleDanLife * lifeMultiplier;
+      const singleDanAttackPower = singleDanAttack * attackMultiplier;
+      const singleDanTotalPower = singleDanLifePower + 5 * singleDanAttackPower;
+      
+      // 计算所需丹药数量
+      const requiredDanCount = Math.ceil(totalTargetPower / singleDanTotalPower);
+      
+      // 计算总丹药效果
+      const totalDanLife = singleDanLife * requiredDanCount;
+      const totalDanAttack = singleDanAttack * requiredDanCount;
+      
+      // 计算验证战力
+      const verifyLife = totalDanLife * lifeMultiplier;
+      const verifyAttack = totalDanAttack * attackMultiplier;
+      const verifyPower = verifyLife + 5 * verifyAttack;
+      
+      // 显示反推结果
+      document.getElementById('required-dan-count').textContent = formatLargeNumber(requiredDanCount);
+      document.getElementById('verify-power').textContent = formatNumberWithUnit(verifyPower);
+      
+      document.getElementById('dan-reverse-result-section').classList.remove('hidden');
+      document.getElementById('power-result-section').classList.add('hidden');
+      document.getElementById('base-result-section').classList.add('hidden');
+      document.getElementById('bath-result-section').classList.add('hidden');
+      document.getElementById('dan-result-section').classList.add('hidden');
+      
+      // 🎯 新增：自动滚动到结果
+    scrollToResult();
+    }
+
+    // QQ群复制功能
+    function copyQQGroup() {
+      const text = "371408377";
+      
+      const input = document.createElement('textarea');
+      input.value = text;
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      
+      input.select();
+      input.setSelectionRange(0, 99999);
+      
+      try {
+        const successful = document.execCommand('copy');
+        document.body.removeChild(input);
+        
+        if (successful) {
+          showCopySuccess();
+        } else {
+          showCustomAlert('复制失败，请手动复制：' + text);
+        }
+      } catch (err) {
+        document.body.removeChild(input);
+        showCustomAlert('请手动复制QQ群号：' + text);
+      }
+    }
+
+    // 显示复制成功提示
+    function showCopySuccess() {
+      const toast = document.createElement('div');
+      toast.textContent = '✓ 已复制到剪贴板';
+      toast.style.position = 'fixed';
+      toast.style.bottom = '50px';
+      toast.style.left = '50%';
+      toast.style.transform = 'translateX(-50%)';
+      toast.style.backgroundColor = 'rgba(0,0,0,0.7)';
+      toast.style.color = 'white';
+      toast.style.padding = '10px 20px';
+      toast.style.borderRadius = '5px';
+      toast.style.zIndex = '1000';
+      toast.style.fontSize = '14px';
+      
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        document.body.removeChild(toast);
+      }, 2000);
+    }
+
+    // 扫雷游戏变量
+    let mineBoard = [];
+    let rows = 0;
+    let cols = 0;
+    let mineCount = 0;
+    let flaggedCount = 0;
+    let revealedCount = 0;
+    let gameOver = false;
+    let gameStartTime = 0;
+    let timerInterval = null;
+    let flagMode = false;
+
+    // 打开扫雷游戏
+    function openMineGame() {
+      document.getElementById('mine-game').style.display = 'block';
+      document.getElementById('game-info-container').classList.add('hidden');
+    }
+
+    // 开始游戏
+    function startGame(r, c, m) {
+      rows = r;
+      cols = c;
+      mineCount = m;
+      flaggedCount = 0;
+      revealedCount = 0;
+      gameOver = false;
+      flagMode = false;
+      
+      document.getElementById('game-info-container').classList.remove('hidden');
+      document.getElementById('flag-mode-btn').classList.remove('active');
+      document.getElementById('flag-mode-btn').textContent = '插旗模式(关)';
+      
+      if (timerInterval) clearInterval(timerInterval);
+      gameStartTime = Date.now();
+      timerInterval = setInterval(updateTimer, 1000);
+      
+      initializeBoard();
+      updateMineCount();
+      updateTimer();
+    }
+
+    // 初始化棋盘
+    function initializeBoard() {
+      const boardElement = document.getElementById('mine-board');
+      boardElement.style.setProperty('--cols', cols);
+      
+      boardElement.className = 'mine-board';
+      if (rows === 8) boardElement.classList.add('easy');
+      else if (rows === 12) boardElement.classList.add('medium');
+      else boardElement.classList.add('hard');
+      
+      boardElement.innerHTML = '';
+      
+      // 创建二维数组
+      mineBoard = Array(rows).fill().map(() => Array(cols).fill(0));
+      
+      // 放置炸弹
+      let minesPlaced = 0;
+      while (minesPlaced < mineCount) {
+        const x = Math.floor(Math.random() * rows);
+        const y = Math.floor(Math.random() * cols);
+        
+        if (mineBoard[x][y] !== -1) {
+          mineBoard[x][y] = -1;
+          minesPlaced++;
+          
+          // 更新周围格子的数字
+          for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+              const nx = x + dx;
+              const ny = y + dy;
+              
+              if (nx >= 0 && nx < rows && ny >= 0 && ny < cols && mineBoard[nx][ny] !== -1) {
+                mineBoard[nx][ny]++;
+              }
+            }
+          }
+        }
+      }
+      
+      // 创建格子元素
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+          const cell = document.createElement('div');
+          cell.className = 'mine-cell';
+          cell.dataset.x = i;
+          cell.dataset.y = j;
+          
+          const contentSpan = document.createElement('span');
+          cell.appendChild(contentSpan);
+          
+          cell.addEventListener('click', function() {
+            if (!gameOver) {
+              if (flagMode) {
+                flagCell(i, j);
+              } else {
+                revealCell(i, j);
+              }
+            }
+          });
+          
+          cell.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            if (!gameOver) flagCell(i, j);
+          });
+          
+          let pressTimer;
+          cell.addEventListener('touchstart', function() {
+            pressTimer = setTimeout(() => {
+              if (!gameOver) flagCell(i, j);
+            }, 500);
+          });
+          
+          cell.addEventListener('touchend', function() {
+            clearTimeout(pressTimer);
+          });
+          
+          boardElement.appendChild(cell);
+        }
+      }
+    }
+
+    // 切换插旗模式
+    function toggleFlagMode() {
+      flagMode = !flagMode;
+      const btn = document.getElementById('flag-mode-btn');
+      if (flagMode) {
+        btn.classList.add('active');
+        btn.textContent = '插旗模式(开)';
+      } else {
+        btn.classList.remove('active');
+        btn.textContent = '插旗模式(关)';
+      }
+    }
+
+    // 揭示格子
+    function revealCell(x, y) {
+      const cell = document.querySelector(`.mine-cell[data-x="${x}"][data-y="${y}"]`);
+      const contentSpan = cell.querySelector('span');
+      
+      if (cell.classList.contains('revealed') || cell.classList.contains('flagged')) {
+        return;
+      }
+      
+      cell.classList.add('revealed');
+      revealedCount++;
+      
+      if (mineBoard[x][y] === -1) {
+        cell.classList.add('mine');
+        contentSpan.innerHTML = '<span class="emoji">💣</span>';
+        gameOver = true;
+        revealAllMines();
+        clearInterval(timerInterval);
+        setTimeout(() => showCustomAlert('游戏结束！你踩到了炸弹！'), 10);
+      } else if (mineBoard[x][y] > 0) {
+        let displayNumber = mineBoard[x][y];
+        if (rows === 8) displayNumber = Math.min(displayNumber, 3);
+        else if (rows === 12) displayNumber = Math.min(displayNumber, 4);
+        else displayNumber = Math.min(displayNumber, 5);
+        
+        contentSpan.innerHTML = `<span class="number-${displayNumber}">${displayNumber}</span>`;
+      } else {
+        for (let dx = -1; dx <= 1; dx++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            const nx = x + dx;
+            const ny = y + dy;
+            
+            if (nx >= 0 && nx < rows && ny >= 0 && ny < cols) {
+              revealCell(nx, ny);
+            }
+          }
+        }
+      }
+      
+      checkWinCondition();
+    }
+
+    // 插旗
+    function flagCell(x, y) {
+      const cell = document.querySelector(`.mine-cell[data-x="${x}"][data-y="${y}"]`);
+      const contentSpan = cell.querySelector('span');
+      
+      if (cell.classList.contains('revealed')) {
+        return;
+      }
+      
+      if (cell.classList.contains('flagged')) {
+        cell.classList.remove('flagged');
+        contentSpan.innerHTML = '';
+        flaggedCount--;
+      } else {
+        cell.classList.add('flagged');
+        contentSpan.innerHTML = '<span class="emoji">🚩</span>';
+        flaggedCount++;
+      }
+      
+      updateMineCount();
+      
+      if (flaggedCount === mineCount) {
+        checkFlagAccuracy();
+      }
+    }
+
+    // 检查旗帜位置准确性
+    function checkFlagAccuracy() {
+      let correctFlags = 0;
+      
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+          const cell = document.querySelector(`.mine-cell[data-x="${i}"][data-y="${j}"]`);
+          if (cell.classList.contains('flagged') && mineBoard[i][j] === -1) {
+            correctFlags++;
+          }
+        }
+      }
+      
+      if (correctFlags !== mineCount) {
+        gameOver = true;
+        clearInterval(timerInterval);
+        revealAllMines();
+        setTimeout(() => showCustomAlert('游戏结束！你的插旗位置有误！'), 10);
+      } else {
+        gameOver = true;
+        clearInterval(timerInterval);
+        revealAllCellsExceptFlags();
+        setTimeout(() => showCustomAlert('恭喜你赢了！所有炸弹都被正确标记！'), 10);
+      }
+    }
+
+    // 检查胜利条件
+    function checkWinCondition() {
+      if (revealedCount === rows * cols - mineCount && !gameOver) {
+        gameOver = true;
+        clearInterval(timerInterval);
+        revealAllCellsExceptFlags();
+        setTimeout(() => showCustomAlert('恭喜你赢了！'), 10);
+      }
+      
+      if (!gameOver) {
+        let allFlagsCorrect = true;
+        for (let i = 0; i < rows; i++) {
+          for (let j = 0; j < cols; j++) {
+            const cell = document.querySelector(`.mine-cell[data-x="${i}"][data-y="${j}"]`);
+            if (mineBoard[i][j] === -1 && !cell.classList.contains('flagged')) {
+              allFlagsCorrect = false;
+              break;
+            }
+          }
+          if (!allFlagsCorrect) break;
+        }
+        
+        if (allFlagsCorrect) {
+          gameOver = true;
+          clearInterval(timerInterval);
+          revealAllCellsExceptFlags();
+          setTimeout(() => showCustomAlert('恭喜你赢了！所有炸弹都被正确标记！'), 10);
+        }
+      }
+    }
+
+    // 胜利时揭开所有非旗格子
+    function revealAllCellsExceptFlags() {
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+          const cell = document.querySelector(`.mine-cell[data-x="${i}"][data-y="${j}"]`);
+          const contentSpan = cell.querySelector('span');
+          
+          if (!cell.classList.contains('flagged') && !cell.classList.contains('revealed')) {
+            cell.classList.add('revealed');
+            
+            if (mineBoard[i][j] === -1) {
+              cell.classList.add('mine');
+              contentSpan.innerHTML = '<span class="emoji">💣</span>';
+            } else if (mineBoard[i][j] > 0) {
+              contentSpan.textContent = mineBoard[i][j];
+            }
+          }
+        }
+      }
+    }
+
+    // 揭示所有炸弹
+    function revealAllMines() {
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+          if (mineBoard[i][j] === -1) {
+            const cell = document.querySelector(`.mine-cell[data-x="${i}"][data-y="${j}"]`);
+            if (!cell.classList.contains('flagged')) {
+              cell.classList.add('mine');
+              cell.querySelector('span').innerHTML = '<span class="emoji">💣</span>';
+            }
+          }
+        }
+      }
+    }
+
+    // 更新炸弹计数
+    function updateMineCount() {
+      document.getElementById('mine-count').textContent = `剩余炸弹: ${mineCount - flaggedCount}`;
+    }
+
+    // 更新计时器
+    function updateTimer() {
+      const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
+      const hours = Math.floor(elapsed / 3600);
+      const minutes = Math.floor((elapsed % 3600) / 60);
+      const seconds = elapsed % 60;
+      
+      const formattedTime = 
+        `${hours.toString().padStart(2, '0')}:` +
+        `${minutes.toString().padStart(2, '0')}:` +
+        `${seconds.toString().padStart(2, '0')}`;
+      
+      document.getElementById('game-time').textContent = `时间: ${formattedTime}`;
+    }
+
+    // 重新开始游戏
+    function restartGame() {
+      startGame(rows, cols, mineCount);
+    }
+
+    // 退出游戏
+    function exitGame() {
+      document.getElementById('mine-game').style.display = 'none';
+      if (timerInterval) clearInterval(timerInterval);
+      document.getElementById('game-info-container').classList.add('hidden');
+    }
+
+    // 初始化页面
+    document.addEventListener('DOMContentLoaded', function() {
+      initSwipe();
+    });
+  </script>
+  <script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/3Np9bHGS3zuV85Fh/quote.js?theme=0&f=12"></script>
 </body>
 </html>
+
+
+
